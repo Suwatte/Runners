@@ -268,7 +268,7 @@ exports.KomgaAuthentication = {
 };
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"../api/auth":1,"../store":17,"../utils":20,"@suwatte/daisuke":21,"buffer":73}],6:[function(require,module,exports){
+},{"../api/auth":1,"../store":17,"../utils":20,"@suwatte/daisuke":21,"buffer":74}],6:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.KomgaBookEvent = void 0;
@@ -337,8 +337,6 @@ exports.KomgaContentSource = {
             url: `${host}/api/v1/books/${chapterId}/pages/${idx + 1}`,
         }));
         return {
-            chapterId,
-            contentId,
             pages: images,
         };
     },
@@ -375,7 +373,7 @@ function buildDirectoryConfig(searchable) {
             options: utils_1.SortOptions,
             canChangeOrder: true,
             default: {
-                key: utils_1.DEFAULT_SORT,
+                id: utils_1.DEFAULT_SORT,
                 ascending: false,
             },
         },
@@ -383,7 +381,7 @@ function buildDirectoryConfig(searchable) {
 }
 async function fetchDirectory(request) {
     const sort = request.sort
-        ? (0, utils_1.buildSort)(request.sort.key, request.sort.ascending)
+        ? (0, utils_1.buildSort)(request.sort.id, request.sort.ascending)
         : (0, utils_1.buildSort)();
     const seriesId = request.context?.seriesId;
     const libraryId = request.context?.libraryId;
@@ -399,7 +397,7 @@ async function fetchDirectory(request) {
         const asTitle = await store_1.KomgaStore.openSeriesAsTitle();
         if (!host)
             throw new Error("Host not defined");
-        const results = (await (0, api_1.getSeriesForLibrary)(libraryId, (0, utils_1.buildSort)(request.sort?.key, request.sort?.ascending), request.page, request.query)).map((v) => (0, utils_1.seriesToTile)(v, host, !(asTitle ?? false)));
+        const results = (await (0, api_1.getSeriesForLibrary)(libraryId, (0, utils_1.buildSort)(request.sort?.id, request.sort?.ascending), request.page, request.query)).map((v) => (0, utils_1.seriesToTile)(v, host, !(asTitle ?? false)));
         return {
             results,
             isLastPage: results.length < 30,
@@ -478,7 +476,7 @@ exports.KomgaPageProvider = {
                 title: "Home",
                 link: {
                     page: {
-                        key: "all",
+                        id: "all",
                     },
                 },
             },
@@ -486,7 +484,7 @@ exports.KomgaPageProvider = {
                 title: lib.name,
                 link: {
                     page: {
-                        key: "library",
+                        id: "library",
                         context: {
                             libraryId: lib.id,
                         },
@@ -507,46 +505,46 @@ const api_1 = require("../api");
 const store_1 = require("../store");
 exports.KomgaPageLinkResolver = {
     getSectionsForPage: async function (link) {
-        switch (link.key) {
+        switch (link.id) {
             case "all":
             case "library": {
                 return buildBrowseLibrarySections();
             }
         }
-        throw new Error(`No Handler Providing sections for ${link.key}`);
+        throw new Error(`No Handler Providing sections for ${link.id}`);
     },
-    resolvePageSection: function (link, sectionKey) {
-        switch (link.key) {
+    resolvePageSection: function (link, sectionID) {
+        switch (link.id) {
             case "all":
             case "library": {
                 const libraryId = link.context?.libraryId ?? null;
-                return resolveLibrarySection(libraryId, sectionKey);
+                return resolveLibrarySection(libraryId, sectionID);
             }
         }
-        throw new Error(`No Handler Resolving ${link.key}`);
+        throw new Error(`No Handler Resolving ${link.id}`);
     },
 };
 // Library Sections
 function buildBrowseLibrarySections() {
     const sections = [];
     sections.push({
-        key: "keep_reading",
+        id: "keep_reading",
         title: "Keep Reading",
     });
     sections.push({
-        key: "recently_released",
+        id: "recently_released",
         title: "Recently Released",
     });
     sections.push({
-        key: "recently_added_books",
+        id: "recently_added_books",
         title: "Recently Added Books",
     });
     sections.push({
-        key: "recently_added_series",
+        id: "recently_added_series",
         title: "Recently Added Series",
     });
     sections.push({
-        key: "recently_updated_series",
+        id: "recently_updated_series",
         title: "Recently Updated Series",
     });
     return sections;
@@ -564,25 +562,25 @@ async function resolveLibrarySection(libraryId, sectionKey) {
     switch (sectionKey) {
         case "keep_reading": {
             const highlights = await (0, library_1.getBooksForLibrary)(libraryId, (0, utils_1.buildSort)(utils_1.SORTS.readProgress, false), "IN_PROGRESS");
-            items = highlights.map((h) => ({ item: h }));
+            items = highlights;
             break;
         }
         case "recently_released": {
             const highlights = await (0, library_1.getBooksForLibrary)(libraryId, (0, utils_1.buildSort)(utils_1.SORTS.releaseDate, false));
-            items = highlights.map((h) => ({ item: h }));
+            items = highlights;
             break;
         }
         case "recently_added_books": {
             const highlights = await (0, library_1.getBooksForLibrary)(libraryId, (0, utils_1.buildSort)(utils_1.SORTS.creationDate, false));
-            items = highlights.map((h) => ({ item: h }));
+            items = highlights;
             break;
         }
         case "recently_added_series": {
-            items = (await convertSeriesToItems("new")).map((h) => ({ item: h }));
+            items = await convertSeriesToItems("new");
             break;
         }
         case "recently_updated_series": {
-            items = (await convertSeriesToItems("updated")).map((h) => ({ item: h }));
+            items = await convertSeriesToItems("updated");
             break;
         }
     }
@@ -603,8 +601,8 @@ exports.KomgaPreferenceProvider = {
                     header: "Core",
                     children: [
                         (0, daisuke_1.UIToggle)({
-                            key: "openAsTitle",
-                            label: "Open Series as Title",
+                            id: "openAsTitle",
+                            title: "Open Series as Title",
                             value: await store_1.KomgaStore.openSeriesAsTitle(),
                             async didChange(value) {
                                 await ObjectStore.set("openAsTitle", value);
@@ -635,7 +633,7 @@ async function getContextForBook(bookId) {
     // should return highlight pointing to the series rather than the book
     // so the local progress entry all point to the same title
     const content = {
-        contentId: book.seriesId,
+        id: book.seriesId,
         title: book.seriesTitle,
         cover: `${host}/api/v1/series/${book.seriesId}/thumbnail`,
     };
@@ -667,8 +665,8 @@ exports.KomgaSetupProvider = {
                     header: "Server URL",
                     children: [
                         (0, daisuke_1.UITextField)({
-                            key: "host",
-                            label: "Server URL",
+                            id: "host",
+                            title: "Server URL",
                             value: (await store_1.KomgaStore.host()) ?? "",
                         }),
                     ],
@@ -760,24 +758,24 @@ exports.SORTS = {
 };
 exports.SortOptions = [
     {
-        key: "metadata.numberSort",
-        label: "Issue Number",
+        id: "metadata.numberSort",
+        title: "Issue Number",
     },
     {
-        key: "name",
-        label: "Name",
+        id: "name",
+        title: "Name",
     },
     {
-        key: "readProgress.readDate",
-        label: "Reading Progress",
+        id: "readProgress.readDate",
+        title: "Reading Progress",
     },
     {
-        key: "metadata.releaseDate",
-        label: "Release Date",
+        id: "metadata.releaseDate",
+        title: "Release Date",
     },
     {
-        key: "createdDate",
-        label: "Creation Date",
+        id: "createdDate",
+        title: "Creation Date",
     },
 ];
 exports.RESULT_COUNT = 30;
@@ -807,14 +805,14 @@ const seriesToTile = (series, host, asRequest) => {
     const cover = `${host}/api/v1/series/${series.id}/thumbnail`;
     const subtitle = `${series.booksCount} Book${series.booksCount != 1 ? "s" : ""}`;
     return {
-        contentId: series.id,
+        id: series.id,
         title: series.metadata.title ?? series.name,
         subtitle,
         cover,
         ...(asRequest && {
             link: {
                 request: {
-                    configKey: "series",
+                    configID: "series",
                     page: 1,
                     context: {
                         seriesId: series.id,
@@ -827,7 +825,7 @@ const seriesToTile = (series, host, asRequest) => {
 exports.seriesToTile = seriesToTile;
 const bookToHighlight = (book, host) => {
     return {
-        contentId: `book:${book.id}`,
+        id: `book:${book.id}`,
         title: book.metadata.title,
         subtitle: `${book.media.pagesCount} Pages • ${book.size}`,
         cover: `${host}/api/v1/books/${book.id}/thumbnail`,
@@ -844,7 +842,6 @@ const bookToHighlight = (book, host) => {
 exports.bookToHighlight = bookToHighlight;
 const bookToChapter = (book, host, index) => {
     return {
-        contentId: book.seriesId,
         chapterId: book.id,
         title: book.metadata.title,
         date: new Date(book.created),
@@ -875,7 +872,6 @@ const seriesToContent = async (series) => {
         info.push(...series.metadata.genres);
     }
     return {
-        contentId: series.id,
         title: series.metadata.title ?? series.name,
         cover,
         status: convertStatus(series.metadata.status),
@@ -942,7 +938,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./runners"), exports);
 __exportStar(require("./types"), exports);
 
-},{"./runners":41,"./types":64}],22:[function(require,module,exports){
+},{"./runners":41,"./types":65}],22:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
@@ -1198,6 +1194,8 @@ arguments[4][22][0].apply(exports,arguments)
 },{"dup":22}],49:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
 },{"dup":22}],50:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],51:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ContentType = exports.ReadingFlag = exports.ReadingMode = exports.PublicationStatus = void 0;
@@ -1219,7 +1217,6 @@ var ReadingMode;
     ReadingMode[ReadingMode["PAGED_COMIC"] = 1] = "PAGED_COMIC";
     ReadingMode[ReadingMode["PAGED_VERTICAL"] = 2] = "PAGED_VERTICAL";
     ReadingMode[ReadingMode["WEBTOON"] = 3] = "WEBTOON";
-    ReadingMode[ReadingMode["WEB"] = 4] = "WEB";
 })(ReadingMode || (exports.ReadingMode = ReadingMode = {}));
 var ReadingFlag;
 (function (ReadingFlag) {
@@ -1240,11 +1237,11 @@ var ContentType;
     ContentType[ContentType["NOVEL"] = 4] = "NOVEL";
 })(ContentType || (exports.ContentType = ContentType = {}));
 
-},{}],51:[function(require,module,exports){
-arguments[4][22][0].apply(exports,arguments)
-},{"dup":22}],52:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
 },{"dup":22}],53:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],54:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProviderLinkType = void 0;
@@ -1256,7 +1253,7 @@ var ProviderLinkType;
     ProviderLinkType[ProviderLinkType["PATREON"] = 3] = "PATREON";
 })(ProviderLinkType || (exports.ProviderLinkType = ProviderLinkType = {}));
 
-},{}],54:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -1280,8 +1277,9 @@ __exportStar(require("./ChapterData"), exports);
 __exportStar(require("./Property"), exports);
 __exportStar(require("./Collection"), exports);
 __exportStar(require("./Provider"), exports);
+__exportStar(require("./Enums"), exports);
 
-},{"./Chapter":47,"./ChapterData":48,"./Collection":49,"./Content":50,"./Highlight":51,"./Property":52,"./Provider":53}],55:[function(require,module,exports){
+},{"./Chapter":47,"./ChapterData":48,"./Collection":49,"./Content":50,"./Enums":51,"./Highlight":52,"./Property":53,"./Provider":54}],56:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthMethod = void 0;
@@ -1293,11 +1291,11 @@ var AuthMethod;
     AuthMethod[AuthMethod["OAUTH"] = 3] = "OAUTH";
 })(AuthMethod || (exports.AuthMethod = AuthMethod = {}));
 
-},{}],56:[function(require,module,exports){
-arguments[4][22][0].apply(exports,arguments)
-},{"dup":22}],57:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
 },{"dup":22}],58:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],59:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CatalogRating = void 0;
@@ -1320,7 +1318,7 @@ var CatalogRating;
     CatalogRating[CatalogRating["NSFW"] = 2] = "NSFW";
 })(CatalogRating || (exports.CatalogRating = CatalogRating = {}));
 
-},{}],59:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -1342,9 +1340,9 @@ __exportStar(require("./RunnerInfo"), exports);
 __exportStar(require("./PagedResult"), exports);
 __exportStar(require("./ContextProvider"), exports);
 
-},{"./Authentication":55,"./ContextProvider":56,"./PagedResult":57,"./RunnerInfo":58}],60:[function(require,module,exports){
+},{"./Authentication":56,"./ContextProvider":57,"./PagedResult":58,"./RunnerInfo":59}],61:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
-},{"dup":22}],61:[function(require,module,exports){
+},{"dup":22}],62:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FilterType = void 0;
@@ -1376,9 +1374,9 @@ var FilterType;
     FilterType[FilterType["INFO"] = 5] = "INFO";
 })(FilterType || (exports.FilterType = FilterType = {}));
 
-},{}],62:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
-},{"dup":22}],63:[function(require,module,exports){
+},{"dup":22}],64:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -1399,7 +1397,7 @@ __exportStar(require("./DirectoryConfig"), exports);
 __exportStar(require("./DirectoryRequest"), exports);
 __exportStar(require("./DirectoryFilter"), exports);
 
-},{"./DirectoryConfig":60,"./DirectoryFilter":61,"./DirectoryRequest":62}],64:[function(require,module,exports){
+},{"./DirectoryConfig":61,"./DirectoryFilter":62,"./DirectoryRequest":63}],65:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -1427,7 +1425,7 @@ __exportStar(require("./page"), exports);
 const Generate = (v) => v;
 exports.Generate = Generate;
 
-},{"./UI":46,"./content":54,"./core":59,"./directory":63,"./networking":69,"./page":70,"./tracker":71}],65:[function(require,module,exports){
+},{"./UI":46,"./content":55,"./core":60,"./directory":64,"./networking":70,"./page":71,"./tracker":72}],66:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NetworkClientBuilder = void 0;
@@ -1549,9 +1547,9 @@ class NetworkClientBuilder {
 }
 exports.NetworkClientBuilder = NetworkClientBuilder;
 
-},{}],66:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
-},{"dup":22}],67:[function(require,module,exports){
+},{"dup":22}],68:[function(require,module,exports){
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -1569,9 +1567,9 @@ const name = (base, known) => __awaiter(void 0, void 0, void 0, function* () {
 });
 exports.name = name;
 
-},{}],68:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
-},{"dup":22}],69:[function(require,module,exports){
+},{"dup":22}],70:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -1593,7 +1591,7 @@ __exportStar(require("./Client"), exports);
 __exportStar(require("./Request"), exports);
 __exportStar(require("./Response"), exports);
 
-},{"./Builder":65,"./Client":66,"./Request":67,"./Response":68}],70:[function(require,module,exports){
+},{"./Builder":66,"./Client":67,"./Request":68,"./Response":69}],71:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SectionStyle = void 0;
@@ -1609,7 +1607,7 @@ var SectionStyle;
     SectionStyle[SectionStyle["STANDARD_GRID"] = 7] = "STANDARD_GRID";
 })(SectionStyle || (exports.SectionStyle = SectionStyle = {}));
 
-},{}],71:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TrackStatus = void 0;
@@ -1623,7 +1621,7 @@ var TrackStatus;
     TrackStatus["REREADING"] = "REREADING";
 })(TrackStatus || (exports.TrackStatus = TrackStatus = {}));
 
-},{}],72:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -1775,7 +1773,7 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],73:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 (function (Buffer){(function (){
 /*!
  * The buffer module from node.js, for the browser.
@@ -3556,7 +3554,7 @@ function numberIsNaN (obj) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"base64-js":72,"buffer":73,"ieee754":74}],74:[function(require,module,exports){
+},{"base64-js":73,"buffer":74,"ieee754":75}],75:[function(require,module,exports){
 /*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m

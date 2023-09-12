@@ -381,7 +381,7 @@ exports.AdvancedTrackerImplementation = {
                 sort: {
                     options: (0, utils_2.getSortOptions)(),
                     default: {
-                        key: "POPULARITY",
+                        id: "POPULARITY",
                         ascending: false,
                     },
                     canChangeOrder: true,
@@ -392,7 +392,7 @@ exports.AdvancedTrackerImplementation = {
             sort: {
                 options: (0, utils_2.getSortOptions)(),
                 default: {
-                    key: "POPULARITY",
+                    id: "POPULARITY",
                     ascending: false,
                 },
                 canChangeOrder: true,
@@ -469,16 +469,15 @@ exports.LinkProvider = exports.LinkResolver = void 0;
 const utils_1 = require("../utils");
 const media_1 = require("../utils/media");
 exports.LinkResolver = {
-    getSectionsForPage: function (link) {
-        const key = link.key;
-        switch (key) {
+    getSectionsForPage: function ({ id }) {
+        switch (id) {
             case "home": {
                 return (0, media_1.getHomePage)();
             }
         }
-        throw new Error(`link not resolved [${key}]`);
+        throw new Error(`link not resolved [${id}]`);
     },
-    resolvePageSection: function (link, sectionKey) {
+    resolvePageSection: function (link, sectionID) {
         throw new Error("non resolving provider.");
     },
 };
@@ -506,7 +505,7 @@ exports.LinkProvider = {
             {
                 title: "Discover",
                 link: {
-                    page: { key: "home" },
+                    page: { id: "home" },
                 },
             },
             {
@@ -602,25 +601,25 @@ const _1 = require(".");
 const gql_1 = require("../gql");
 const daisuke_2 = require("@suwatte/daisuke");
 const StarSystem = new Array(6).fill(0).map((_, idx) => ({
-    key: `${idx * 20}`,
-    label: idx !== 0 ? "⭐".repeat(idx) : "-",
+    id: `${idx * 20}`,
+    title: idx !== 0 ? "⭐".repeat(idx) : "-",
 }));
 const FaceSystem = [
     {
-        key: "0",
-        label: "-",
+        id: "0",
+        title: "-",
     },
     {
-        key: "35",
-        label: "🙁👎",
+        id: "35",
+        title: "🙁👎",
     },
     {
-        key: "60",
-        label: "😐",
+        id: "60",
+        title: "😐",
     },
     {
-        key: "85",
-        label: "😃👍",
+        id: "85",
+        title: "😃👍",
     },
 ];
 /**
@@ -641,15 +640,15 @@ const buildEntryForm = async (id) => {
                 header: "Reading Progress",
                 children: [
                     (0, daisuke_1.UIStepper)({
-                        key: "progress",
-                        label: "Chapter",
+                        id: "progress",
+                        title: "Chapter",
                         value: entry.progress,
                         upperBound: chapters,
                         allowDecimal: true,
                     }),
                     (0, daisuke_1.UIStepper)({
-                        key: "progressVolumes",
-                        label: "Volume",
+                        id: "progressVolumes",
+                        title: "Volume",
                         value: entry.progressVolumes ?? 0,
                         upperBound: volumes,
                     }),
@@ -659,8 +658,8 @@ const buildEntryForm = async (id) => {
             {
                 children: [
                     (0, daisuke_1.UIStepper)({
-                        key: "repeat",
-                        label: "Total rereads",
+                        id: "repeat",
+                        title: "Total rereads",
                         value: entry.repeat,
                     }),
                 ],
@@ -669,14 +668,14 @@ const buildEntryForm = async (id) => {
             {
                 children: [
                     (0, daisuke_1.UIDatePicker)({
-                        key: "startedAt",
-                        label: "Start Date",
+                        id: "startedAt",
+                        title: "Start Date",
                         optional: "true",
                         value: entry.startedAt && (0, _1.parseFuzzyDate)(entry.startedAt),
                     }),
                     (0, daisuke_1.UIDatePicker)({
-                        key: "completedAt",
-                        label: "Completion Date",
+                        id: "completedAt",
+                        title: "Completion Date",
                         optional: "true",
                         value: entry.completedAt && (0, _1.parseFuzzyDate)(entry.completedAt),
                     }),
@@ -687,8 +686,8 @@ const buildEntryForm = async (id) => {
                 header: "Notes",
                 children: [
                     (0, daisuke_1.UITextField)({
-                        key: "notes",
-                        label: "Notes",
+                        id: "notes",
+                        title: "Notes",
                         optional: "true",
                         value: entry.notes,
                     }),
@@ -697,24 +696,24 @@ const buildEntryForm = async (id) => {
             {
                 children: [
                     (0, daisuke_1.UIMultiPicker)({
-                        key: "customLists",
-                        label: "Custom Lists",
+                        id: "customLists",
+                        title: "Custom Lists",
                         options: entry.customLists.map((v) => ({
-                            key: v.name,
-                            label: v.name,
+                            id: v.name,
+                            title: v.name,
                         })),
                         value: entry.customLists
                             .filter((v) => v.enabled)
                             .map((v) => v.name),
                     }),
                     (0, daisuke_1.UIToggle)({
-                        key: "hiddenFromStatusLists",
-                        label: "Hide From Status List",
+                        id: "hiddenFromStatusLists",
+                        title: "Hide From Status List",
                         value: entry.hiddenFromStatusLists,
                     }),
                     (0, daisuke_1.UIToggle)({
-                        key: "private",
-                        label: "Private Entry",
+                        id: "private",
+                        title: "Private Entry",
                         value: entry.private,
                     }),
                 ],
@@ -724,7 +723,7 @@ const buildEntryForm = async (id) => {
 };
 exports.buildEntryForm = buildEntryForm;
 const ScoreComponent = async (score) => {
-    const label = "Score";
+    const title = "Score";
     const scoreFormat = await (0, _1.getScoreFormat)();
     const numSystemScore = (score) => {
         if (score === 0)
@@ -743,16 +742,16 @@ const ScoreComponent = async (score) => {
         case "POINT_3": {
             const options = scoreFormat === "POINT_3" ? FaceSystem : StarSystem;
             return (0, daisuke_1.UIPicker)({
-                key: "score",
-                label,
-                value: score ? getClosestKey(score, options) : options?.[0].key,
+                id: "score",
+                title,
+                value: score ? getClosestKey(score, options) : options?.[0].id,
                 options,
             });
         }
         default: {
             return (0, daisuke_1.UIStepper)({
-                key: "score",
-                label,
+                id: "score",
+                title,
                 value: score ? numSystemScore(score) : 0,
                 allowDecimal: scoreFormat === "POINT_10_DECIMAL" ? true : undefined,
                 upperBound: scoreFormat === "POINT_100" ? 100 : 10,
@@ -804,13 +803,13 @@ const handleSubmitEntryForm = async (id, form) => {
 };
 exports.handleSubmitEntryForm = handleSubmitEntryForm;
 const getClosestKey = (num, options) => {
-    let closestKey = options[0].key;
-    let closestDiff = Math.abs(num - Number(options[0].key));
+    let closestKey = options[0].id;
+    let closestDiff = Math.abs(num - Number(options[0].id));
     for (let i = 1; i < options.length; i++) {
-        let diff = Math.abs(num - Number(options[i].key));
+        let diff = Math.abs(num - Number(options[i].id));
         if (diff < closestDiff) {
             closestDiff = diff;
-            closestKey = options[i].key;
+            closestKey = options[i].id;
         }
     }
     return closestKey;
@@ -968,7 +967,7 @@ const simpleSearch = async (search) => {
     const media = Page?.media;
     if (!media)
         return [];
-    return media.map(parsers_1.mediaToTrackItem);
+    return media.map(parsers_1.mediaToHighlight);
 };
 exports.simpleSearch = simpleSearch;
 const TITLES = {
@@ -980,12 +979,12 @@ const TITLES = {
 };
 const getHomePage = async () => {
     const { data } = await (0, _1.request)(gql_1.HomePageQuery);
-    return Object.keys(data).map((key) => ({
-        key,
-        title: TITLES[key],
-        items: data[key].media.map((v) => ({ item: (0, parsers_1.mediaToTrackItem)(v) })),
+    return Object.keys(data).map((id) => ({
+        id,
+        title: TITLES[id],
+        items: data[id].media.map(parsers_1.mediaToHighlight),
         viewMoreLink: {
-            request: { context: { discover: key }, page: 1, configKey: "viewMore" },
+            request: { context: { discover: id }, page: 1, configID: "viewMore" },
         },
     }));
 };
@@ -994,7 +993,7 @@ const getHomePageViewMore = async (key, page) => {
     const { data } = await (0, _1.request)((0, gql_1.HomePageViewMoreQuery)(key), {
         page,
     });
-    const results = data[key].media.map(parsers_1.mediaToTrackItem);
+    const results = data[key].media.map(parsers_1.mediaToHighlight);
     return {
         isLastPage: results.length < 30,
         results,
@@ -1010,7 +1009,7 @@ const getFullMedia = async (id) => {
 exports.getFullMedia = getFullMedia;
 const fullSearch = async (query) => {
     const sort = query.sort
-        ? [(0, utils_1.getSortKey)(query.sort.key, query.sort.ascending), "SCORE_DESC"]
+        ? [(0, utils_1.getSortKey)(query.sort.id, query.sort.ascending), "SCORE_DESC"]
         : ["POPULARITY_DESC", "SCORE_DESC"];
     const variables = {
         page: query.page,
@@ -1026,7 +1025,7 @@ const fullSearch = async (query) => {
     const media = Page?.media;
     if (!media)
         return [];
-    const results = media.map(parsers_1.mediaToTrackItem);
+    const results = media.map(parsers_1.mediaToHighlight);
     return results;
 };
 exports.fullSearch = fullSearch;
@@ -1042,16 +1041,15 @@ const buildGenres = async () => {
     const genreFilter = {
         id: "genres",
         title: "Genres",
-        label: "Genres",
         type: daisuke_1.FilterType.EXCLUDABLE_MULTISELECT,
-        options: genres.map((v) => ({ key: v, label: v })),
+        options: genres.map((v) => ({ id: v, title: v })),
     };
     const tagFilters = [];
     // reference:  https://stackoverflow.com/a/40774906
     const groupedTags = (0, exports.groupTags)(tags);
     for (const key in groupedTags) {
         const tags = groupedTags[key];
-        const options = tags.map((v) => ({ key: v.name, label: v.name }));
+        const options = tags.map((v) => ({ id: v.name, title: v.name }));
         if (options.length == 0) {
             continue;
         }
@@ -1135,11 +1133,11 @@ exports.getMediaListCollection = getMediaListCollection;
 },{".":10,"../gql":1}],13:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mediaToFullTrackItem = exports.mediaToTrackItem = void 0;
+exports.mediaToFullTrackItem = exports.mediaToHighlight = void 0;
 const _1 = require(".");
 const utils_1 = require("./utils");
 const media_1 = require("./media");
-const mediaToTrackItem = (m) => ({
+const mediaToHighlight = (m) => ({
     id: m.id.toString(),
     title: m.title.userPreferred,
     cover: m.coverImage.large,
@@ -1155,7 +1153,7 @@ const mediaToTrackItem = (m) => ({
         },
     }),
 });
-exports.mediaToTrackItem = mediaToTrackItem;
+exports.mediaToHighlight = mediaToHighlight;
 const mediaToFullTrackItem = (media) => ({
     id: media.id.toString(),
     title: media.title.userPreferred,
@@ -1177,9 +1175,9 @@ const mediaToFullTrackItem = (media) => ({
     isFavorite: media.isFavourite,
     relatedTitles: media.relations?.nodes
         ?.filter((v) => v.type === "MANGA")
-        .map(exports.mediaToTrackItem),
-    recommendedTitles: media.recommendations?.nodes?.map((v) => (0, exports.mediaToTrackItem)(v.mediaRecommendation)),
-    links: media.externalLinks?.map((v) => ({ label: v.site, url: v.url })),
+        .map(exports.mediaToHighlight),
+    recommendedTitles: media.recommendations?.nodes?.map((v) => (0, exports.mediaToHighlight)(v.mediaRecommendation)),
+    links: media.externalLinks?.map((v) => ({ title: v.site, url: v.url })),
     additionalTitles: media.synonyms,
     characters: media.characters?.nodes?.map((v) => ({
         name: v.name.userPreferred,
@@ -1196,14 +1194,14 @@ const mediaToFullTrackItem = (media) => ({
     properties: [
         {
             id: "genres",
-            label: "Genres",
-            tags: media.genres?.map((id) => ({ label: id, id })) ?? [],
+            title: "Genres",
+            tags: media.genres?.map((id) => ({ title: id, id })) ?? [],
         },
         ...Object.entries((0, media_1.groupTags)(media.tags ?? [])).map(([id, tags]) => {
             return {
                 id,
-                label: id.replace("-", ": ").replaceAll("-", " "),
-                tags: tags.map((v) => ({ id: v.name, label: v.name })),
+                title: id.replace("-", ": ").replaceAll("-", " "),
+                tags: tags.map((v) => ({ id: v.name, title: v.name })),
             };
         }),
     ],
@@ -1246,9 +1244,9 @@ const sortKeys = [
     "Chapters",
 ];
 const getSortOptions = () => {
-    return sortKeys.map((v) => ({
-        label: v,
-        key: v.replace(" ", "_").toUpperCase(),
+    return sortKeys.map((id) => ({
+        title: id,
+        id: id.replace(" ", "_").toUpperCase(),
     }));
 };
 exports.getSortOptions = getSortOptions;
@@ -1313,7 +1311,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./runners"), exports);
 __exportStar(require("./types"), exports);
 
-},{"./runners":36,"./types":59}],17:[function(require,module,exports){
+},{"./runners":36,"./types":60}],17:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
@@ -1569,6 +1567,8 @@ arguments[4][17][0].apply(exports,arguments)
 },{"dup":17}],44:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
 },{"dup":17}],45:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],46:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ContentType = exports.ReadingFlag = exports.ReadingMode = exports.PublicationStatus = void 0;
@@ -1590,7 +1590,6 @@ var ReadingMode;
     ReadingMode[ReadingMode["PAGED_COMIC"] = 1] = "PAGED_COMIC";
     ReadingMode[ReadingMode["PAGED_VERTICAL"] = 2] = "PAGED_VERTICAL";
     ReadingMode[ReadingMode["WEBTOON"] = 3] = "WEBTOON";
-    ReadingMode[ReadingMode["WEB"] = 4] = "WEB";
 })(ReadingMode || (exports.ReadingMode = ReadingMode = {}));
 var ReadingFlag;
 (function (ReadingFlag) {
@@ -1611,11 +1610,11 @@ var ContentType;
     ContentType[ContentType["NOVEL"] = 4] = "NOVEL";
 })(ContentType || (exports.ContentType = ContentType = {}));
 
-},{}],46:[function(require,module,exports){
-arguments[4][17][0].apply(exports,arguments)
-},{"dup":17}],47:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
 },{"dup":17}],48:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],49:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProviderLinkType = void 0;
@@ -1627,7 +1626,7 @@ var ProviderLinkType;
     ProviderLinkType[ProviderLinkType["PATREON"] = 3] = "PATREON";
 })(ProviderLinkType || (exports.ProviderLinkType = ProviderLinkType = {}));
 
-},{}],49:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -1651,8 +1650,9 @@ __exportStar(require("./ChapterData"), exports);
 __exportStar(require("./Property"), exports);
 __exportStar(require("./Collection"), exports);
 __exportStar(require("./Provider"), exports);
+__exportStar(require("./Enums"), exports);
 
-},{"./Chapter":42,"./ChapterData":43,"./Collection":44,"./Content":45,"./Highlight":46,"./Property":47,"./Provider":48}],50:[function(require,module,exports){
+},{"./Chapter":42,"./ChapterData":43,"./Collection":44,"./Content":45,"./Enums":46,"./Highlight":47,"./Property":48,"./Provider":49}],51:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthMethod = void 0;
@@ -1664,11 +1664,11 @@ var AuthMethod;
     AuthMethod[AuthMethod["OAUTH"] = 3] = "OAUTH";
 })(AuthMethod || (exports.AuthMethod = AuthMethod = {}));
 
-},{}],51:[function(require,module,exports){
-arguments[4][17][0].apply(exports,arguments)
-},{"dup":17}],52:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
 },{"dup":17}],53:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],54:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CatalogRating = void 0;
@@ -1691,7 +1691,7 @@ var CatalogRating;
     CatalogRating[CatalogRating["NSFW"] = 2] = "NSFW";
 })(CatalogRating || (exports.CatalogRating = CatalogRating = {}));
 
-},{}],54:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -1713,9 +1713,9 @@ __exportStar(require("./RunnerInfo"), exports);
 __exportStar(require("./PagedResult"), exports);
 __exportStar(require("./ContextProvider"), exports);
 
-},{"./Authentication":50,"./ContextProvider":51,"./PagedResult":52,"./RunnerInfo":53}],55:[function(require,module,exports){
+},{"./Authentication":51,"./ContextProvider":52,"./PagedResult":53,"./RunnerInfo":54}],56:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
-},{"dup":17}],56:[function(require,module,exports){
+},{"dup":17}],57:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FilterType = void 0;
@@ -1747,9 +1747,9 @@ var FilterType;
     FilterType[FilterType["INFO"] = 5] = "INFO";
 })(FilterType || (exports.FilterType = FilterType = {}));
 
-},{}],57:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
-},{"dup":17}],58:[function(require,module,exports){
+},{"dup":17}],59:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -1770,7 +1770,7 @@ __exportStar(require("./DirectoryConfig"), exports);
 __exportStar(require("./DirectoryRequest"), exports);
 __exportStar(require("./DirectoryFilter"), exports);
 
-},{"./DirectoryConfig":55,"./DirectoryFilter":56,"./DirectoryRequest":57}],59:[function(require,module,exports){
+},{"./DirectoryConfig":56,"./DirectoryFilter":57,"./DirectoryRequest":58}],60:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -1798,7 +1798,7 @@ __exportStar(require("./page"), exports);
 const Generate = (v) => v;
 exports.Generate = Generate;
 
-},{"./UI":41,"./content":49,"./core":54,"./directory":58,"./networking":64,"./page":65,"./tracker":66}],60:[function(require,module,exports){
+},{"./UI":41,"./content":50,"./core":55,"./directory":59,"./networking":65,"./page":66,"./tracker":67}],61:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NetworkClientBuilder = void 0;
@@ -1920,9 +1920,9 @@ class NetworkClientBuilder {
 }
 exports.NetworkClientBuilder = NetworkClientBuilder;
 
-},{}],61:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
-},{"dup":17}],62:[function(require,module,exports){
+},{"dup":17}],63:[function(require,module,exports){
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -1940,9 +1940,9 @@ const name = (base, known) => __awaiter(void 0, void 0, void 0, function* () {
 });
 exports.name = name;
 
-},{}],63:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
-},{"dup":17}],64:[function(require,module,exports){
+},{"dup":17}],65:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -1964,7 +1964,7 @@ __exportStar(require("./Client"), exports);
 __exportStar(require("./Request"), exports);
 __exportStar(require("./Response"), exports);
 
-},{"./Builder":60,"./Client":61,"./Request":62,"./Response":63}],65:[function(require,module,exports){
+},{"./Builder":61,"./Client":62,"./Request":63,"./Response":64}],66:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SectionStyle = void 0;
@@ -1980,7 +1980,7 @@ var SectionStyle;
     SectionStyle[SectionStyle["STANDARD_GRID"] = 7] = "STANDARD_GRID";
 })(SectionStyle || (exports.SectionStyle = SectionStyle = {}));
 
-},{}],66:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TrackStatus = void 0;

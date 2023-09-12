@@ -39,7 +39,7 @@ const getChapters = async (id) => {
     const path = `/manga/${sourceId}/${contentId}/chapters`;
     const url = `${host}/api/v1/lite${path}`;
     const data = await get({ url });
-    return data.map((v) => (0, parser_1.toChapter)(v, id));
+    return data.map(parser_1.toChapter);
 };
 exports.getChapters = getChapters;
 // ChapterData
@@ -67,11 +67,11 @@ const getSourceConfig = async (sourceId) => {
         filters,
         sort: {
             options: [
-                { key: "tachi_popular", label: "Popular (Tachi)" },
+                { id: "tachi_popular", title: "Popular (Tachi)" },
                 ...sortOptions,
             ],
             default: {
-                key: "tachi_popular",
+                id: "tachi_popular",
                 ascending: false,
             },
             canChangeOrder: sort?.type === "Sort" && sortOptions.length != 0,
@@ -109,8 +109,6 @@ exports.SuwayomiContentSource = {
         const pages = await (0, api_1.getChapterData)(contentId, chapterId);
         return {
             pages,
-            chapterId,
-            contentId,
         };
     },
     getIdentifierForURL: async function (url) {
@@ -141,7 +139,7 @@ exports.SuwayomiDirectoryHandler = {
 const search = (request) => {
     const sourceId = request.context?.sourceId;
     if (sourceId) {
-        if (request.sort?.key === "tachi_popular" &&
+        if (request.sort?.id === "tachi_popular" &&
             !request.query &&
             !request.filters) {
             return (0, api_1.getSourcePopularPage)(sourceId, request.page);
@@ -280,8 +278,8 @@ exports.SuwayomiSetupBuilder = {
                     header: "Server URL",
                     children: [
                         (0, daisuke_1.UITextField)({
-                            key: "host",
-                            label: "Server URL",
+                            id: "host",
+                            title: "Server URL",
                             value: (await store_1.SuwayomiStore.host()) ?? "",
                         }),
                     ],
@@ -363,8 +361,8 @@ const parseFilter = (filter, idx) => {
         case "group": {
             const items = filter.filter.state;
             const options = items.map((item, index) => ({
-                key: index.toString(),
-                label: item.filter.name,
+                id: index.toString(),
+                title: item.filter.name,
             }));
             const isTristateGroup = items.some((v) => v.type === "TriState");
             const prepared = (0, parser_1.Generate)({
@@ -389,8 +387,8 @@ const ParseSelectComponent = (idx, filter) => {
         title: filter.name,
         type: daisuke_1.FilterType.SELECT,
         options: values.map((value, index) => ({
-            key: index.toString(),
-            label: value,
+            id: index.toString(),
+            title: value,
         })),
     };
 };
@@ -408,16 +406,16 @@ const ParseTriStateComponent = (idx, filter) => {
         type: daisuke_1.FilterType.EXCLUDABLE_MULTISELECT,
         options: [
             {
-                key: idx.toString(),
-                label: filter.name,
+                id: idx.toString(),
+                title: filter.name,
             },
         ],
     };
 };
 const ParseSortComponent = (filter) => {
     return filter.filter.values.map((v, idx) => ({
-        key: idx.toString(),
-        label: v,
+        id: idx.toString(),
+        title: v,
     }));
 };
 exports.ParseSortComponent = ParseSortComponent;
@@ -439,7 +437,7 @@ const toIdentifiers = (grouped) => {
 exports.toIdentifiers = toIdentifiers;
 const toHighlight = (manga, host) => {
     return (0, exports.Generate)({
-        contentId: (0, exports.getIdentifier)(manga),
+        id: (0, exports.getIdentifier)(manga),
         title: manga.title,
         cover: manga.thumbnail.startsWith("/")
             ? `${host}${manga.thumbnail}`
@@ -448,7 +446,6 @@ const toHighlight = (manga, host) => {
 };
 exports.toHighlight = toHighlight;
 const toContent = (manga, host) => (0, exports.Generate)({
-    contentId: (0, exports.getIdentifier)(manga),
     title: manga.title,
     cover: manga.thumbnail.startsWith("/")
         ? `${host}${manga.thumbnail}`
@@ -460,9 +457,9 @@ const toContent = (manga, host) => (0, exports.Generate)({
     properties: [
         {
             id: "tags",
-            label: "Tags",
+            title: "Tags",
             tags: manga.genres?.map((v) => ({
-                label: v,
+                title: v,
                 id: v,
                 noninteractive: true,
             })) ?? [],
@@ -472,11 +469,10 @@ const toContent = (manga, host) => (0, exports.Generate)({
     webUrl: manga.webUrl,
 });
 exports.toContent = toContent;
-const toChapter = (chapter, contentId) => (0, exports.Generate)({
+const toChapter = (chapter) => (0, exports.Generate)({
     index: chapter.index,
     number: chapter.chapterNumber,
     chapterId: chapter.url,
-    contentId: contentId,
     date: new Date(chapter.dateUploaded),
     language: chapter.lang,
     ...(chapter.scanlator && {
@@ -541,7 +537,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./runners"), exports);
 __exportStar(require("./types"), exports);
 
-},{"./runners":31,"./types":54}],12:[function(require,module,exports){
+},{"./runners":31,"./types":55}],12:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 
@@ -797,6 +793,8 @@ arguments[4][12][0].apply(exports,arguments)
 },{"dup":12}],39:[function(require,module,exports){
 arguments[4][12][0].apply(exports,arguments)
 },{"dup":12}],40:[function(require,module,exports){
+arguments[4][12][0].apply(exports,arguments)
+},{"dup":12}],41:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ContentType = exports.ReadingFlag = exports.ReadingMode = exports.PublicationStatus = void 0;
@@ -818,7 +816,6 @@ var ReadingMode;
     ReadingMode[ReadingMode["PAGED_COMIC"] = 1] = "PAGED_COMIC";
     ReadingMode[ReadingMode["PAGED_VERTICAL"] = 2] = "PAGED_VERTICAL";
     ReadingMode[ReadingMode["WEBTOON"] = 3] = "WEBTOON";
-    ReadingMode[ReadingMode["WEB"] = 4] = "WEB";
 })(ReadingMode || (exports.ReadingMode = ReadingMode = {}));
 var ReadingFlag;
 (function (ReadingFlag) {
@@ -839,11 +836,11 @@ var ContentType;
     ContentType[ContentType["NOVEL"] = 4] = "NOVEL";
 })(ContentType || (exports.ContentType = ContentType = {}));
 
-},{}],41:[function(require,module,exports){
-arguments[4][12][0].apply(exports,arguments)
-},{"dup":12}],42:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 arguments[4][12][0].apply(exports,arguments)
 },{"dup":12}],43:[function(require,module,exports){
+arguments[4][12][0].apply(exports,arguments)
+},{"dup":12}],44:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProviderLinkType = void 0;
@@ -855,7 +852,7 @@ var ProviderLinkType;
     ProviderLinkType[ProviderLinkType["PATREON"] = 3] = "PATREON";
 })(ProviderLinkType || (exports.ProviderLinkType = ProviderLinkType = {}));
 
-},{}],44:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -879,8 +876,9 @@ __exportStar(require("./ChapterData"), exports);
 __exportStar(require("./Property"), exports);
 __exportStar(require("./Collection"), exports);
 __exportStar(require("./Provider"), exports);
+__exportStar(require("./Enums"), exports);
 
-},{"./Chapter":37,"./ChapterData":38,"./Collection":39,"./Content":40,"./Highlight":41,"./Property":42,"./Provider":43}],45:[function(require,module,exports){
+},{"./Chapter":37,"./ChapterData":38,"./Collection":39,"./Content":40,"./Enums":41,"./Highlight":42,"./Property":43,"./Provider":44}],46:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthMethod = void 0;
@@ -892,11 +890,11 @@ var AuthMethod;
     AuthMethod[AuthMethod["OAUTH"] = 3] = "OAUTH";
 })(AuthMethod || (exports.AuthMethod = AuthMethod = {}));
 
-},{}],46:[function(require,module,exports){
-arguments[4][12][0].apply(exports,arguments)
-},{"dup":12}],47:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 arguments[4][12][0].apply(exports,arguments)
 },{"dup":12}],48:[function(require,module,exports){
+arguments[4][12][0].apply(exports,arguments)
+},{"dup":12}],49:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CatalogRating = void 0;
@@ -919,7 +917,7 @@ var CatalogRating;
     CatalogRating[CatalogRating["NSFW"] = 2] = "NSFW";
 })(CatalogRating || (exports.CatalogRating = CatalogRating = {}));
 
-},{}],49:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -941,9 +939,9 @@ __exportStar(require("./RunnerInfo"), exports);
 __exportStar(require("./PagedResult"), exports);
 __exportStar(require("./ContextProvider"), exports);
 
-},{"./Authentication":45,"./ContextProvider":46,"./PagedResult":47,"./RunnerInfo":48}],50:[function(require,module,exports){
+},{"./Authentication":46,"./ContextProvider":47,"./PagedResult":48,"./RunnerInfo":49}],51:[function(require,module,exports){
 arguments[4][12][0].apply(exports,arguments)
-},{"dup":12}],51:[function(require,module,exports){
+},{"dup":12}],52:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FilterType = void 0;
@@ -975,9 +973,9 @@ var FilterType;
     FilterType[FilterType["INFO"] = 5] = "INFO";
 })(FilterType || (exports.FilterType = FilterType = {}));
 
-},{}],52:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 arguments[4][12][0].apply(exports,arguments)
-},{"dup":12}],53:[function(require,module,exports){
+},{"dup":12}],54:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -998,7 +996,7 @@ __exportStar(require("./DirectoryConfig"), exports);
 __exportStar(require("./DirectoryRequest"), exports);
 __exportStar(require("./DirectoryFilter"), exports);
 
-},{"./DirectoryConfig":50,"./DirectoryFilter":51,"./DirectoryRequest":52}],54:[function(require,module,exports){
+},{"./DirectoryConfig":51,"./DirectoryFilter":52,"./DirectoryRequest":53}],55:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -1026,7 +1024,7 @@ __exportStar(require("./page"), exports);
 const Generate = (v) => v;
 exports.Generate = Generate;
 
-},{"./UI":36,"./content":44,"./core":49,"./directory":53,"./networking":59,"./page":60,"./tracker":61}],55:[function(require,module,exports){
+},{"./UI":36,"./content":45,"./core":50,"./directory":54,"./networking":60,"./page":61,"./tracker":62}],56:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NetworkClientBuilder = void 0;
@@ -1148,9 +1146,9 @@ class NetworkClientBuilder {
 }
 exports.NetworkClientBuilder = NetworkClientBuilder;
 
-},{}],56:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 arguments[4][12][0].apply(exports,arguments)
-},{"dup":12}],57:[function(require,module,exports){
+},{"dup":12}],58:[function(require,module,exports){
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -1168,9 +1166,9 @@ const name = (base, known) => __awaiter(void 0, void 0, void 0, function* () {
 });
 exports.name = name;
 
-},{}],58:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 arguments[4][12][0].apply(exports,arguments)
-},{"dup":12}],59:[function(require,module,exports){
+},{"dup":12}],60:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -1192,7 +1190,7 @@ __exportStar(require("./Client"), exports);
 __exportStar(require("./Request"), exports);
 __exportStar(require("./Response"), exports);
 
-},{"./Builder":55,"./Client":56,"./Request":57,"./Response":58}],60:[function(require,module,exports){
+},{"./Builder":56,"./Client":57,"./Request":58,"./Response":59}],61:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SectionStyle = void 0;
@@ -1208,7 +1206,7 @@ var SectionStyle;
     SectionStyle[SectionStyle["STANDARD_GRID"] = 7] = "STANDARD_GRID";
 })(SectionStyle || (exports.SectionStyle = SectionStyle = {}));
 
-},{}],61:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TrackStatus = void 0;
