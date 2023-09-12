@@ -14,9 +14,9 @@ const sortKeys = [
 ];
 
 export const getSortOptions = (): Option[] => {
-  return sortKeys.map((v) => ({
-    label: v,
-    key: v.replace(" ", "_").toUpperCase(),
+  return sortKeys.map((id) => ({
+    title: id,
+    id: id.replace(" ", "_").toUpperCase(),
   }));
 };
 

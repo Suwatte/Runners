@@ -16,7 +16,7 @@ export const toIdentifiers = (grouped: string) => {
 
 export const toHighlight = (manga: MangaDto, host: string): Highlight => {
   return Generate<Highlight>({
-    contentId: getIdentifier(manga),
+    id: getIdentifier(manga),
     title: manga.title,
     cover: manga.thumbnail.startsWith("/")
       ? `${host}${manga.thumbnail}`
@@ -26,7 +26,6 @@ export const toHighlight = (manga: MangaDto, host: string): Highlight => {
 
 export const toContent = (manga: MangaDto, host: string): Content =>
   Generate<Content>({
-    contentId: getIdentifier(manga),
     title: manga.title,
     cover: manga.thumbnail.startsWith("/")
       ? `${host}${manga.thumbnail}`
@@ -38,10 +37,10 @@ export const toContent = (manga: MangaDto, host: string): Content =>
     properties: [
       {
         id: "tags",
-        label: "Tags",
+        title: "Tags",
         tags:
           manga.genres?.map((v) => ({
-            label: v,
+            title: v,
             id: v,
             noninteractive: true,
           })) ?? [],
@@ -51,12 +50,11 @@ export const toContent = (manga: MangaDto, host: string): Content =>
     webUrl: manga.webUrl,
   });
 
-export const toChapter = (chapter: ChapterDto, contentId: string): Chapter =>
+export const toChapter = (chapter: ChapterDto): Chapter =>
   Generate<Chapter>({
     index: chapter.index,
     number: chapter.chapterNumber,
     chapterId: chapter.url,
-    contentId: contentId,
     date: new Date(chapter.dateUploaded),
     language: chapter.lang,
     ...(chapter.scanlator && {

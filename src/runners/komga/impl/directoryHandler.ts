@@ -12,10 +12,8 @@ import { KomgaStore } from "../store";
 /**
  * Implementation of the DirectoryHandler Methods
  */
-export const KomgaDirectoryHandler: DirectoryHandler<Highlight> = {
-  getDirectory: function (
-    request: DirectoryRequest
-  ): Promise<PagedResult<Highlight>> {
+export const KomgaDirectoryHandler: DirectoryHandler = {
+  getDirectory: function (request: DirectoryRequest): Promise<PagedResult> {
     return fetchDirectory(request);
   },
   getDirectoryConfig: async function (
@@ -35,17 +33,17 @@ function buildDirectoryConfig(searchable: boolean): DirectoryConfig {
       options: SortOptions,
       canChangeOrder: true,
       default: {
-        key: DEFAULT_SORT,
+        id: DEFAULT_SORT,
         ascending: false,
       },
     },
   };
 }
 
-type IResponse = Promise<PagedResult<Highlight>>;
+type IResponse = Promise<PagedResult>;
 async function fetchDirectory(request: DirectoryRequest): IResponse {
   const sort = request.sort
-    ? buildSort(request.sort.key, request.sort.ascending)
+    ? buildSort(request.sort.id, request.sort.ascending)
     : buildSort();
   const seriesId = request.context?.seriesId;
   const libraryId = request.context?.libraryId;
@@ -63,7 +61,7 @@ async function fetchDirectory(request: DirectoryRequest): IResponse {
     const results = (
       await getSeriesForLibrary(
         libraryId,
-        buildSort(request.sort?.key, request.sort?.ascending),
+        buildSort(request.sort?.id, request.sort?.ascending),
         request.page,
         request.query
       )

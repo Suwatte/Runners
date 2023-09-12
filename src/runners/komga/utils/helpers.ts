@@ -33,14 +33,14 @@ export const seriesToTile = (
     series.booksCount != 1 ? "s" : ""
   }`;
   return {
-    contentId: series.id,
+    id: series.id,
     title: series.metadata.title ?? series.name,
     subtitle,
     cover,
     ...(asRequest && {
       link: {
         request: {
-          configKey: "series",
+          configID: "series",
           page: 1,
           context: {
             seriesId: series.id,
@@ -53,7 +53,7 @@ export const seriesToTile = (
 
 export const bookToHighlight = (book: BookDto, host: string): Highlight => {
   return {
-    contentId: `book:${book.id}`,
+    id: `book:${book.id}`,
     title: book.metadata.title,
     subtitle: `${book.media.pagesCount} Pages • ${book.size}`,
     cover: `${host}/api/v1/books/${book.id}/thumbnail`,
@@ -74,7 +74,6 @@ export const bookToChapter = (
   index: number
 ): Chapter => {
   return {
-    contentId: book.seriesId,
     chapterId: book.id,
     title: book.metadata.title,
     date: new Date(book.created),
@@ -106,7 +105,6 @@ export const seriesToContent = async (series: SeriesDto): Promise<Content> => {
     info.push(...series.metadata.genres);
   }
   return {
-    contentId: series.id,
     title: series.metadata.title ?? series.name,
     cover,
     status: convertStatus(series.metadata.status),

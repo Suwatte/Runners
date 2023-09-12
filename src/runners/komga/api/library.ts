@@ -1,4 +1,4 @@
-import { Chapter, Highlight, PageItem } from "@suwatte/daisuke";
+import { Chapter, Highlight } from "@suwatte/daisuke";
 import { request } from ".";
 import {
   BookDto,
@@ -16,7 +16,6 @@ import {
   bookToHighlight,
   buildSort,
   genURL,
-  seriesToTile,
 } from "../utils";
 
 /**

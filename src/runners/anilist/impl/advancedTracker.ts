@@ -4,7 +4,6 @@ import {
   DirectoryRequest,
   FullTrackItem,
   PagedResult,
-  TrackItem,
 } from "@suwatte/daisuke";
 import {
   buildGenres,
@@ -21,7 +20,7 @@ export const AdvancedTrackerImplementation: AdvancedTracker = {
   },
   getDirectory: async function (
     request: DirectoryRequest
-  ): Promise<PagedResult<TrackItem>> {
+  ): Promise<PagedResult> {
     if (request.context) {
       if (request.context.list) {
         return getMediaListCollection(request.context.list);
@@ -48,7 +47,7 @@ export const AdvancedTrackerImplementation: AdvancedTracker = {
         sort: {
           options: getSortOptions(),
           default: {
-            key: "POPULARITY",
+            id: "POPULARITY",
             ascending: false,
           },
           canChangeOrder: true,
@@ -59,7 +58,7 @@ export const AdvancedTrackerImplementation: AdvancedTracker = {
       sort: {
         options: getSortOptions(),
         default: {
-          key: "POPULARITY",
+          id: "POPULARITY",
           ascending: false,
         },
         canChangeOrder: true,

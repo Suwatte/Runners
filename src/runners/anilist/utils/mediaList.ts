@@ -1,16 +1,9 @@
-import { PagedResult, TrackItem } from "@suwatte/daisuke";
+import { Highlight, PagedResult } from "@suwatte/daisuke";
 import { parseID, parseWebUrl, request } from ".";
+import { MediaListCollectionQuery, MediaListEntryQuery } from "../gql";
 import {
-  HomePageQuery,
-  MediaListCollectionQuery,
-  MediaListEntryQuery,
-  SimpleSearchQuery,
-} from "../gql";
-import {
-  HomePageResponse,
   MediaListCollectionResponse,
   MediaListEntryQueryResponse,
-  SimpleSearchResponse,
 } from "../types";
 
 /**
@@ -24,7 +17,7 @@ export const getMediaListEntry = async (id: string) => {
   return data.data.Media;
 };
 
-export const parseTrackItem = async (id: string): Promise<TrackItem> => {
+export const parseTrackItem = async (id: string): Promise<Highlight> => {
   const {
     mediaListEntry: entry,
     title: { userPreferred: title },
@@ -52,7 +45,7 @@ export const parseTrackItem = async (id: string): Promise<TrackItem> => {
 
 export const getMediaListCollection = async (
   name: string
-): Promise<PagedResult<TrackItem>> => {
+): Promise<PagedResult> => {
   const userName = await SecureStore.get("user");
   if (!userName) throw new Error("failed to get username");
   const {
@@ -67,7 +60,7 @@ export const getMediaListCollection = async (
 
   if (!target) throw new Error("list not found.");
 
-  const results: TrackItem[] = target.entries.map((v) => ({
+  const results: Highlight[] = target.entries.map((v) => ({
     id: `${v.media.id}`,
     title: v.media.title.userPreferred,
     cover: v.media.coverImage.large,

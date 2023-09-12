@@ -38,8 +38,6 @@ export const KomgaContentSource: Omit<ContentSource, OmittedKeys> = {
       }));
 
     return {
-      chapterId,
-      contentId,
       pages: images,
     };
   },

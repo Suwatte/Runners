@@ -2,7 +2,6 @@ import {
   DirectoryConfig,
   DirectoryHandler,
   DirectoryRequest,
-  Highlight,
   PagedResult,
 } from "@suwatte/daisuke";
 import { getHost } from "../utils/store";
@@ -10,10 +9,10 @@ import { PagedMangaListDto } from "../types";
 import { Generate, toHighlight } from "../utils/parser";
 import { getSourceConfig, getSourcePopularPage } from "../api";
 
-export const SuwayomiDirectoryHandler: DirectoryHandler<Highlight> = {
+export const SuwayomiDirectoryHandler: DirectoryHandler = {
   getDirectory: async function (
     request: DirectoryRequest
-  ): Promise<PagedResult<Highlight>> {
+  ): Promise<PagedResult> {
     return search(request);
   },
   getDirectoryConfig: async function (
@@ -27,11 +26,11 @@ export const SuwayomiDirectoryHandler: DirectoryHandler<Highlight> = {
   },
 };
 
-const search = (request: DirectoryRequest): Promise<PagedResult<Highlight>> => {
+const search = (request: DirectoryRequest): Promise<PagedResult> => {
   const sourceId = request.context?.sourceId;
   if (sourceId) {
     if (
-      request.sort?.key === "tachi_popular" &&
+      request.sort?.id === "tachi_popular" &&
       !request.query &&
       !request.filters
     ) {
@@ -48,7 +47,7 @@ const search = (request: DirectoryRequest): Promise<PagedResult<Highlight>> => {
 const searchSource = async (
   sourceId: string,
   request: DirectoryRequest
-): Promise<PagedResult<Highlight>> => {
+): Promise<PagedResult> => {
   const client = new NetworkClient();
   const host = await getHost();
   const url = `${host}/api/v1/lite/${sourceId}/search`;
@@ -63,7 +62,7 @@ const searchSource = async (
 
   const { mangaList, hasNextPage }: PagedMangaListDto = JSON.parse(raw);
   const highlights = mangaList.map((v) => toHighlight(v, host));
-  return Generate<PagedResult<Highlight>>({
+  return Generate<PagedResult>({
     isLastPage: !hasNextPage,
     results: highlights,
   });

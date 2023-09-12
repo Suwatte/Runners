@@ -5,28 +5,24 @@ import {
   PageLinkResolver,
   PageSection,
   ResolvedPageSection,
-  TrackItem,
 } from "@suwatte/daisuke";
 import { authenticated, getViewer } from "../utils";
 import { getHomePage } from "../utils/media";
 
-export const LinkResolver: PageLinkResolver<TrackItem> = {
-  getSectionsForPage: function (
-    link: PageLink
-  ): Promise<PageSection<TrackItem>[]> {
-    const key = link.key;
-    switch (key) {
+export const LinkResolver: PageLinkResolver = {
+  getSectionsForPage: function ({ id }: PageLink): Promise<PageSection[]> {
+    switch (id) {
       case "home": {
         return getHomePage();
       }
     }
 
-    throw new Error(`link not resolved [${key}]`);
+    throw new Error(`link not resolved [${id}]`);
   },
   resolvePageSection: function (
     link: PageLink,
-    sectionKey: string
-  ): Promise<ResolvedPageSection<TrackItem>> {
+    sectionID: string
+  ): Promise<ResolvedPageSection> {
     throw new Error("non resolving provider.");
   },
 };
@@ -60,7 +56,7 @@ export const LinkProvider: PageLinkProvider = {
       {
         title: "Discover",
         link: {
-          page: { key: "home" },
+          page: { id: "home" },
         },
       },
       {

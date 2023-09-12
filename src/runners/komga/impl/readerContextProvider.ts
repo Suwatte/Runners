@@ -22,7 +22,7 @@ async function getContextForBook(bookId: string): Promise<ReaderContext> {
   // should return highlight pointing to the series rather than the book
   // so the local progress entry all point to the same title
   const content: Highlight = {
-    contentId: book.seriesId,
+    id: book.seriesId,
     title: book.seriesTitle,
     cover: `${host}/api/v1/series/${book.seriesId}/thumbnail`,
   };

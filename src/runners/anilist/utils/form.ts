@@ -20,26 +20,26 @@ import { MediaListEntryMutation } from "../gql";
 import { Form, FormSection, Generate } from "@suwatte/daisuke";
 
 const StarSystem: Option[] = new Array(6).fill(0).map((_, idx) => ({
-  key: `${idx * 20}`,
-  label: idx !== 0 ? "⭐".repeat(idx) : "-",
+  id: `${idx * 20}`,
+  title: idx !== 0 ? "⭐".repeat(idx) : "-",
 }));
 
 const FaceSystem: Option[] = [
   {
-    key: "0",
-    label: "-",
+    id: "0",
+    title: "-",
   },
   {
-    key: "35",
-    label: "🙁👎",
+    id: "35",
+    title: "🙁👎",
   },
   {
-    key: "60",
-    label: "😐",
+    id: "60",
+    title: "😐",
   },
   {
-    key: "85",
-    label: "😃👍",
+    id: "85",
+    title: "😃👍",
   },
 ];
 
@@ -67,15 +67,15 @@ export const buildEntryForm = async (id: string) => {
         header: "Reading Progress",
         children: [
           UIStepper({
-            key: "progress",
-            label: "Chapter",
+            id: "progress",
+            title: "Chapter",
             value: entry.progress,
             upperBound: chapters,
             allowDecimal: true,
           }),
           UIStepper({
-            key: "progressVolumes",
-            label: "Volume",
+            id: "progressVolumes",
+            title: "Volume",
             value: entry.progressVolumes ?? 0,
             upperBound: volumes,
           }),
@@ -86,8 +86,8 @@ export const buildEntryForm = async (id: string) => {
       {
         children: [
           UIStepper({
-            key: "repeat",
-            label: "Total rereads",
+            id: "repeat",
+            title: "Total rereads",
             value: entry.repeat,
           }),
         ],
@@ -97,14 +97,14 @@ export const buildEntryForm = async (id: string) => {
       {
         children: [
           UIDatePicker({
-            key: "startedAt",
-            label: "Start Date",
+            id: "startedAt",
+            title: "Start Date",
             optional: "true",
             value: entry.startedAt && parseFuzzyDate(entry.startedAt),
           }),
           UIDatePicker({
-            key: "completedAt",
-            label: "Completion Date",
+            id: "completedAt",
+            title: "Completion Date",
             optional: "true",
             value: entry.completedAt && parseFuzzyDate(entry.completedAt),
           }),
@@ -116,8 +116,8 @@ export const buildEntryForm = async (id: string) => {
         header: "Notes",
         children: [
           UITextField({
-            key: "notes",
-            label: "Notes",
+            id: "notes",
+            title: "Notes",
             optional: "true",
             value: entry.notes,
           }),
@@ -127,24 +127,24 @@ export const buildEntryForm = async (id: string) => {
       {
         children: [
           UIMultiPicker({
-            key: "customLists",
-            label: "Custom Lists",
+            id: "customLists",
+            title: "Custom Lists",
             options: entry.customLists.map((v) => ({
-              key: v.name,
-              label: v.name,
+              id: v.name,
+              title: v.name,
             })),
             value: entry.customLists
               .filter((v) => v.enabled)
               .map((v) => v.name),
           }),
           UIToggle({
-            key: "hiddenFromStatusLists",
-            label: "Hide From Status List",
+            id: "hiddenFromStatusLists",
+            title: "Hide From Status List",
             value: entry.hiddenFromStatusLists,
           }),
           UIToggle({
-            key: "private",
-            label: "Private Entry",
+            id: "private",
+            title: "Private Entry",
             value: entry.private,
           }),
         ],
@@ -154,7 +154,7 @@ export const buildEntryForm = async (id: string) => {
 };
 
 const ScoreComponent = async (score: number | undefined) => {
-  const label = "Score";
+  const title = "Score";
   const scoreFormat = await getScoreFormat();
 
   const numSystemScore = (score: number) => {
@@ -174,16 +174,16 @@ const ScoreComponent = async (score: number | undefined) => {
     case "POINT_3": {
       const options = scoreFormat === "POINT_3" ? FaceSystem : StarSystem;
       return UIPicker({
-        key: "score",
-        label,
-        value: score ? getClosestKey(score, options) : options?.[0].key,
+        id: "score",
+        title,
+        value: score ? getClosestKey(score, options) : options?.[0].id,
         options,
       });
     }
     default: {
       return UIStepper({
-        key: "score",
-        label,
+        id: "score",
+        title,
         value: score ? numSystemScore(score) : 0,
         allowDecimal: scoreFormat === "POINT_10_DECIMAL" ? true : undefined,
         upperBound: scoreFormat === "POINT_100" ? 100 : 10,
@@ -243,14 +243,14 @@ export const handleSubmitEntryForm = async (id: string, form: FormProps) => {
 };
 
 const getClosestKey = (num: number, options: Option[]) => {
-  let closestKey = options[0].key;
-  let closestDiff = Math.abs(num - Number(options[0].key));
+  let closestKey = options[0].id;
+  let closestDiff = Math.abs(num - Number(options[0].id));
 
   for (let i = 1; i < options.length; i++) {
-    let diff = Math.abs(num - Number(options[i].key));
+    let diff = Math.abs(num - Number(options[i].id));
     if (diff < closestDiff) {
       closestDiff = diff;
-      closestKey = options[i].key;
+      closestKey = options[i].id;
     }
   }
 

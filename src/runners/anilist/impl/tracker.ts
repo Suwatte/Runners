@@ -1,4 +1,4 @@
-import { ContentTracker, Form, TrackItem, TrackStatus } from "@suwatte/daisuke";
+import { ContentTracker, Form, Highlight, TrackStatus } from "@suwatte/daisuke";
 import { buildEntryForm, handleSubmitEntryForm } from "../utils/form";
 import { parseID, parseTrackItem, request } from "../utils";
 import { getSearchResults } from "../utils/media";
@@ -13,10 +13,10 @@ export const TrackerImplementation: Omit<ContentTracker, "info"> = {
     };
     await request(MediaListEntryMutation, variables);
   },
-  getResultsForTitles: function (titles: string[]): Promise<TrackItem[]> {
+  getResultsForTitles: function (titles: string[]): Promise<Highlight[]> {
     return getSearchResults(titles);
   },
-  getTrackItem: function (id: string): Promise<TrackItem> {
+  getTrackItem: function (id: string): Promise<Highlight> {
     return parseTrackItem(id);
   },
   beginTracking: async function (

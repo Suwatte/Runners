@@ -9,8 +9,8 @@ export const KomgaPreferenceProvider: UserPreferenceHandler = {
           header: "Core",
           children: [
             UIToggle({
-              key: "openAsTitle",
-              label: "Open Series as Title",
+              id: "openAsTitle",
+              title: "Open Series as Title",
               value: await KomgaStore.openSeriesAsTitle(),
               async didChange(value) {
                 await ObjectStore.set("openAsTitle", value);

@@ -10,24 +10,24 @@ export const SORTS = {
 
 export const SortOptions: Option[] = [
   {
-    key: "metadata.numberSort",
-    label: "Issue Number",
+    id: "metadata.numberSort",
+    title: "Issue Number",
   },
   {
-    key: "name",
-    label: "Name",
+    id: "name",
+    title: "Name",
   },
   {
-    key: "readProgress.readDate",
-    label: "Reading Progress",
+    id: "readProgress.readDate",
+    title: "Reading Progress",
   },
   {
-    key: "metadata.releaseDate",
-    label: "Release Date",
+    id: "metadata.releaseDate",
+    title: "Release Date",
   },
   {
-    key: "createdDate",
-    label: "Creation Date",
+    id: "createdDate",
+    title: "Creation Date",
   },
 ];
 export const RESULT_COUNT = 30;

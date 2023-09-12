@@ -25,7 +25,7 @@ export const KomgaPageProvider: PageLinkProvider = {
         title: "Home",
         link: {
           page: {
-            key: "all",
+            id: "all",
           },
         },
       },
@@ -33,7 +33,7 @@ export const KomgaPageProvider: PageLinkProvider = {
         title: lib.name,
         link: {
           page: {
-            key: "library",
+            id: "library",
             context: {
               libraryId: lib.id,
             },

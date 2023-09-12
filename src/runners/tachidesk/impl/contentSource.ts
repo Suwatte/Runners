@@ -24,8 +24,6 @@ export const SuwayomiContentSource: Omit<ContentSource, OmittedKeys> = {
     const pages = await getChapterData(contentId, chapterId);
     return {
       pages,
-      chapterId,
-      contentId,
     };
   },
   getIdentifierForURL: async function (

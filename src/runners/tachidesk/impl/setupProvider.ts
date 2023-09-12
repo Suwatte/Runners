@@ -9,8 +9,8 @@ export const SuwayomiSetupBuilder: RunnerSetupProvider = {
           header: "Server URL",
           children: [
             UITextField({
-              key: "host",
-              label: "Server URL",
+              id: "host",
+              title: "Server URL",
               value: (await SuwayomiStore.host()) ?? "",
             }),
           ],

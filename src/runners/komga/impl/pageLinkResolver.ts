@@ -1,6 +1,5 @@
 import {
   Highlight,
-  PageItem,
   PageLink,
   PageLinkResolver,
   PageSection,
@@ -14,59 +13,57 @@ import { SORTS, buildSort, seriesToTile } from "../utils";
 import { getHost } from "../api";
 import { KomgaStore } from "../store";
 
-export const KomgaPageLinkResolver: PageLinkResolver<Highlight> = {
-  getSectionsForPage: async function (
-    link: PageLink
-  ): Promise<PageSection<Highlight>[]> {
-    switch (link.key) {
+export const KomgaPageLinkResolver: PageLinkResolver = {
+  getSectionsForPage: async function (link: PageLink): Promise<PageSection[]> {
+    switch (link.id) {
       case "all":
       case "library": {
         return buildBrowseLibrarySections();
       }
     }
 
-    throw new Error(`No Handler Providing sections for ${link.key}`);
+    throw new Error(`No Handler Providing sections for ${link.id}`);
   },
   resolvePageSection: function (
     link: PageLink,
-    sectionKey: string
-  ): Promise<ResolvedPageSection<Highlight>> {
-    switch (link.key) {
+    sectionID: string
+  ): Promise<ResolvedPageSection> {
+    switch (link.id) {
       case "all":
       case "library": {
         const libraryId =
           (link.context?.libraryId as string | undefined) ?? null;
-        return resolveLibrarySection(libraryId, sectionKey);
+        return resolveLibrarySection(libraryId, sectionID);
       }
     }
 
-    throw new Error(`No Handler Resolving ${link.key}`);
+    throw new Error(`No Handler Resolving ${link.id}`);
   },
 };
 
 // Library Sections
 function buildBrowseLibrarySections() {
-  const sections: PageSection<Highlight>[] = [];
+  const sections: PageSection[] = [];
 
   sections.push({
-    key: "keep_reading",
+    id: "keep_reading",
     title: "Keep Reading",
   });
 
   sections.push({
-    key: "recently_released",
+    id: "recently_released",
     title: "Recently Released",
   });
   sections.push({
-    key: "recently_added_books",
+    id: "recently_added_books",
     title: "Recently Added Books",
   });
   sections.push({
-    key: "recently_added_series",
+    id: "recently_added_series",
     title: "Recently Added Series",
   });
   sections.push({
-    key: "recently_updated_series",
+    id: "recently_updated_series",
     title: "Recently Updated Series",
   });
 
@@ -78,7 +75,7 @@ async function resolveLibrarySection(
   libraryId: string | null,
   sectionKey: string
 ) {
-  let items: PageItem<Highlight>[] = [];
+  let items: Highlight[] = [];
 
   const convertSeriesToItems = async (key: "new" | "updated") => {
     const openAsTitle = await KomgaStore.openSeriesAsTitle();
@@ -99,7 +96,7 @@ async function resolveLibrarySection(
         buildSort(SORTS.readProgress, false),
         "IN_PROGRESS"
       );
-      items = highlights.map((h) => ({ item: h }));
+      items = highlights;
       break;
     }
     case "recently_released": {
@@ -107,7 +104,7 @@ async function resolveLibrarySection(
         libraryId,
         buildSort(SORTS.releaseDate, false)
       );
-      items = highlights.map((h) => ({ item: h }));
+      items = highlights;
       break;
     }
     case "recently_added_books": {
@@ -115,15 +112,15 @@ async function resolveLibrarySection(
         libraryId,
         buildSort(SORTS.creationDate, false)
       );
-      items = highlights.map((h) => ({ item: h }));
+      items = highlights;
       break;
     }
     case "recently_added_series": {
-      items = (await convertSeriesToItems("new")).map((h) => ({ item: h }));
+      items = await convertSeriesToItems("new");
       break;
     }
     case "recently_updated_series": {
-      items = (await convertSeriesToItems("updated")).map((h) => ({ item: h }));
+      items = await convertSeriesToItems("updated");
       break;
     }
   }

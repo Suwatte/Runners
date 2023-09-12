@@ -56,8 +56,8 @@ export const parseFilter = (
       const items = filter.filter.state as FilterObjectDto[];
 
       const options: Option[] = items.map((item, index) => ({
-        key: index.toString(),
-        label: item.filter.name,
+        id: index.toString(),
+        title: item.filter.name,
       }));
 
       const isTristateGroup = items.some((v) => v.type === "TriState");
@@ -85,8 +85,8 @@ const ParseSelectComponent = (idx: number, filter: any): DirectoryFilter => {
     title: filter.name,
     type: FilterType.SELECT,
     options: values.map((value, index) => ({
-      key: index.toString(),
-      label: value,
+      id: index.toString(),
+      title: value,
     })),
   };
 };
@@ -106,8 +106,8 @@ const ParseTriStateComponent = (idx: number, filter: any): DirectoryFilter => {
     type: FilterType.EXCLUDABLE_MULTISELECT,
     options: [
       {
-        key: idx.toString(),
-        label: filter.name,
+        id: idx.toString(),
+        title: filter.name,
       },
     ],
   };
@@ -115,7 +115,7 @@ const ParseTriStateComponent = (idx: number, filter: any): DirectoryFilter => {
 
 export const ParseSortComponent = (filter: FilterObjectDto): Option[] => {
   return filter.filter.values.map((v, idx) => ({
-    key: idx.toString(),
-    label: v,
+    id: idx.toString(),
+    title: v,
   }));
 };

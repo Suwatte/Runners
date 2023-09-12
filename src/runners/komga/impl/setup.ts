@@ -13,8 +13,8 @@ export const KomgaSetupProvider: RunnerSetupProvider = {
           header: "Server URL",
           children: [
             UITextField({
-              key: "host",
-              label: "Server URL",
+              id: "host",
+              title: "Server URL",
               value: (await KomgaStore.host()) ?? "",
             }),
           ],

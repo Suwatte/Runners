@@ -62,7 +62,7 @@ export const getChapters = async (id: string) => {
   const path = `/manga/${sourceId}/${contentId}/chapters`;
   const url = `${host}/api/v1/lite${path}`;
   const data = await get<ChapterDto[]>({ url });
-  return data.map((v) => toChapter(v, id));
+  return data.map(toChapter);
 };
 
 // ChapterData
@@ -102,11 +102,11 @@ export const getSourceConfig = async (
     filters,
     sort: {
       options: [
-        { key: "tachi_popular", label: "Popular (Tachi)" },
+        { id: "tachi_popular", title: "Popular (Tachi)" },
         ...sortOptions,
       ],
       default: {
-        key: "tachi_popular",
+        id: "tachi_popular",
         ascending: false,
       },
       canChangeOrder: sort?.type === "Sort" && sortOptions.length != 0,
@@ -124,7 +124,7 @@ export const getSourcePopularPage = async (sourceId: string, page: number) => {
   const { mangaList, hasNextPage } = await get<PagedMangaListDto>({ url });
 
   const highlights = mangaList.map((v) => toHighlight(v, host));
-  return Generate<PagedResult<Highlight>>({
+  return Generate<PagedResult>({
     isLastPage: !hasNextPage,
     results: highlights,
   });

@@ -3,15 +3,12 @@ import {
   DirectoryRequest,
   FilterType,
   FullTrackItem,
-  PageItem,
+  Highlight,
   PageSection,
   PagedResult,
-  ResolvedPageSection,
-  SectionStyle,
   Tag,
-  TrackItem,
 } from "@suwatte/daisuke";
-import { request, parseWebUrl, parseID } from ".";
+import { request, parseID } from ".";
 import {
   SimpleSearchQuery,
   HomePageQuery,
@@ -26,7 +23,7 @@ import {
   Media,
   FullMediaResponse,
 } from "../types";
-import { mediaToFullTrackItem, mediaToTrackItem } from "./parsers";
+import { mediaToFullTrackItem, mediaToHighlight } from "./parsers";
 import { convertSTTFilter, getSortKey } from "./utils";
 
 export const getSearchResults = async (titles: string[]) => {
@@ -39,7 +36,7 @@ export const getSearchResults = async (titles: string[]) => {
   return [];
 };
 
-export const simpleSearch = async (search: string): Promise<TrackItem[]> => {
+export const simpleSearch = async (search: string): Promise<Highlight[]> => {
   const {
     data: { Page },
   } = await request<SimpleSearchResponse>(SimpleSearchQuery, {
@@ -50,7 +47,7 @@ export const simpleSearch = async (search: string): Promise<TrackItem[]> => {
 
   if (!media) return [];
 
-  return media.map(mediaToTrackItem);
+  return media.map(mediaToHighlight);
 };
 
 const TITLES: Record<string, string> = {
@@ -61,15 +58,15 @@ const TITLES: Record<string, string> = {
   top: "Top 100",
 };
 
-export const getHomePage = async (): Promise<PageSection<TrackItem>[]> => {
+export const getHomePage = async (): Promise<PageSection[]> => {
   const { data } = await request<HomePageResponse>(HomePageQuery);
 
-  return Object.keys(data).map((key) => ({
-    key,
-    title: TITLES[key],
-    items: data[key].media.map((v) => ({ item: mediaToTrackItem(v) })),
+  return Object.keys(data).map((id) => ({
+    id,
+    title: TITLES[id],
+    items: data[id].media.map(mediaToHighlight),
     viewMoreLink: {
-      request: { context: { discover: key }, page: 1, configKey: "viewMore" },
+      request: { context: { discover: id }, page: 1, configID: "viewMore" },
     },
   }));
 };
@@ -77,12 +74,12 @@ export const getHomePage = async (): Promise<PageSection<TrackItem>[]> => {
 export const getHomePageViewMore = async (
   key: string,
   page: number
-): Promise<PagedResult<TrackItem>> => {
+): Promise<PagedResult> => {
   const { data } = await request<HomePageResponse>(HomePageViewMoreQuery(key), {
     page,
   });
 
-  const results = data[key]!.media.map(mediaToTrackItem);
+  const results = data[key]!.media.map(mediaToHighlight);
   return {
     isLastPage: results.length < 30,
     results,
@@ -101,7 +98,7 @@ export const getFullMedia = async (id: string): Promise<FullTrackItem> => {
 
 export const fullSearch = async (query: DirectoryRequest) => {
   const sort = query.sort
-    ? [getSortKey(query.sort.key, query.sort.ascending), "SCORE_DESC"]
+    ? [getSortKey(query.sort.id, query.sort.ascending), "SCORE_DESC"]
     : ["POPULARITY_DESC", "SCORE_DESC"];
 
   const variables = {
@@ -122,7 +119,7 @@ export const fullSearch = async (query: DirectoryRequest) => {
   const media = Page?.media;
 
   if (!media) return [];
-  const results = media.map(mediaToTrackItem);
+  const results = media.map(mediaToHighlight);
   return results;
 };
 export type AnilistTag = { category: string; isAdult: boolean; name: string };
@@ -149,9 +146,8 @@ export const buildGenres = async () => {
   const genreFilter: DirectoryFilter = {
     id: "genres",
     title: "Genres",
-    label: "Genres",
     type: FilterType.EXCLUDABLE_MULTISELECT,
-    options: genres.map((v) => ({ key: v, label: v })),
+    options: genres.map((v) => ({ id: v, title: v })),
   };
 
   const tagFilters: DirectoryFilter[] = [];
@@ -160,7 +156,7 @@ export const buildGenres = async () => {
 
   for (const key in groupedTags) {
     const tags = groupedTags[key];
-    const options = tags.map((v) => ({ key: v.name, label: v.name }));
+    const options = tags.map((v) => ({ id: v.name, title: v.name }));
 
     if (options.length == 0) {
       continue;
