@@ -1,0 +1,1998 @@
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.STTPackage = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./mutation"), exports);
+__exportStar(require("./queries"), exports);
+
+},{"./mutation":2,"./queries":3}],2:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.MediaListEntryMutation = void 0;
+exports.MediaListEntryMutation = `
+ mutation (
+          $id: Int
+          $mediaId: Int
+          $status: MediaListStatus
+          $score: Int
+          $progress: Int
+          $progressVolumes: Int
+          $repeat: Int
+          $private: Boolean
+          $notes: String
+          $customLists: [String]
+          $hiddenFromStatusLists: Boolean
+          $startedAt: FuzzyDateInput
+          $completedAt: FuzzyDateInput
+        ) {
+          SaveMediaListEntry(
+            id: $id
+            mediaId: $mediaId
+            status: $status
+            scoreRaw: $score
+            progress: $progress
+            progressVolumes: $progressVolumes
+            repeat: $repeat
+            private: $private
+            notes: $notes
+            customLists: $customLists
+            hiddenFromStatusLists: $hiddenFromStatusLists
+            startedAt: $startedAt
+            completedAt: $completedAt
+          ) {
+                  mediaId
+          }
+        }
+`;
+
+},{}],3:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.GenresQuery = exports.FullSearchQuery = exports.FullMediaQuery = exports.MediaListCollectionQuery = exports.HomePageViewMoreQuery = exports.HomePageQuery = exports.SimpleSearchQuery = exports.MediaListEntryQuery = exports.CurrentViewerScoreFormatQuery = exports.CurrentViewerQuery = void 0;
+exports.CurrentViewerQuery = `
+query CurrentUser {
+    Viewer {
+    id
+    name
+    about
+    avatar {
+        large
+    }
+    bannerImage
+    mediaListOptions {
+      scoreFormat
+      rowOrder
+      mangaList {
+        customLists
+        sectionOrder
+        }
+      }
+    }
+}`;
+exports.CurrentViewerScoreFormatQuery = `
+query ScoreFormat {
+      Viewer {
+        mediaListOptions {
+          scoreFormat
+        }
+      }
+    }
+`;
+exports.MediaListEntryQuery = `
+query ($id: Int) {
+    Media(id: $id) {
+    id
+    title {
+        userPreferred
+    }
+    coverImage {
+        large
+    }
+    chapters
+    volumes
+    mediaListEntry {
+        status
+        score(format: POINT_100)
+        progress
+        progressVolumes
+        repeat
+        private
+        notes
+        hiddenFromStatusLists
+        customLists(asArray: true)
+        startedAt {
+            year
+            month
+            day
+        }
+        completedAt {
+            year
+            month
+            day
+            }
+        }
+    }
+}`;
+exports.SimpleSearchQuery = `
+query SimpleSearch ($search: String, $isAdult: Boolean) {
+      Page(perPage: 30) {
+        media(search: $search, type: MANGA, isAdult: $isAdult) {
+          id
+          title {
+            userPreferred
+          }
+          coverImage {
+            large
+          }
+        }
+      }
+    }`;
+const MediaFragment = `
+fragment media on Media {
+  id
+  title {
+    userPreferred
+  }
+  coverImage {
+    large
+  }
+  type
+  isAdult
+  mediaListEntry {
+    status
+    progress
+    progressVolumes
+  }
+}
+  `;
+exports.HomePageQuery = `
+query HomePageQuery {
+  trending: Page(page: 1, perPage: 15) {
+    media(sort: TRENDING_DESC, type: MANGA, isAdult: false) {
+      ...media
+    }
+  }
+  popular: Page(page: 1, perPage: 15) {
+    media(sort: POPULARITY_DESC, type: MANGA, isAdult: false) {
+      ...media
+    }
+  }
+  
+  manhwa: Page(page: 1, perPage: 15) {
+    media(
+      sort: POPULARITY_DESC
+      type: MANGA
+      countryOfOrigin: "KR"
+      isAdult: false
+    ) {
+      ...media
+    }
+  }
+
+  manga:  Page(page: 1, perPage: 15) {
+    media(
+      sort: POPULARITY_DESC
+      type: MANGA
+      countryOfOrigin: "JP"
+      isAdult: false
+    ) {
+      ...media
+    }
+  }
+  top: Page(page: 1, perPage: 15) {
+    media(sort: SCORE_DESC, type: MANGA, isAdult: false) {
+      ...media
+    }
+  }
+}
+
+${MediaFragment}
+`;
+const HomePageViewMoreQuery = (key) => `
+query HomePageViewMoreQuery ($page: Int){
+
+  ${key}: Page(page: $page, perPage: 30) {
+        media(sort: ${key === "trending"
+    ? "TRENDING_DESC"
+    : key === "top"
+        ? "SCORE_DESC"
+        : "POPULARITY_DESC"}, type: MANGA, isAdult: false ${["manga", "manhwa"].includes(key)
+    ? key === "manga"
+        ? `,countryOfOrigin: "JP"`
+        : `,countryOfOrigin: "KR" `
+    : ""}) {
+      ...media
+    }
+  }
+}  
+  ${MediaFragment}
+
+`;
+exports.HomePageViewMoreQuery = HomePageViewMoreQuery;
+exports.MediaListCollectionQuery = `
+query ($userName: String) {
+  MediaListCollection(userName: $userName, type: MANGA) {
+    lists {
+      name
+      isCustomList
+      isCompletedList: isSplitCompletedList
+      entries {
+        ...mediaListEntry
+      }
+    }
+  }
+}
+fragment mediaListEntry on MediaList {
+  id
+  mediaId
+  status
+  progress
+  progressVolumes
+  media {
+    ...media
+  }
+}
+
+ ${MediaFragment}
+`;
+exports.FullMediaQuery = `
+query ($id: Int) {
+  Media(id: $id) {
+    id
+    title {
+      userPreferred
+    }
+    coverImage {
+      large
+    }
+    mediaListEntry {
+      status
+      progress
+      progressVolumes
+    }
+    chapters
+    volumes
+    isAdult
+    description(asHtml: true)
+    status(version:2)
+    bannerImage
+    genres
+    synonyms
+    tags {
+      id
+      name
+      category
+    }
+    isFavourite
+    externalLinks {
+      id
+      url
+			site
+    }
+    recommendations(page: 1, perPage:20, sort: [RATING_DESC]) {
+      nodes {
+        mediaRecommendation {
+          ...media
+        }
+      }
+    }
+    siteUrl
+    countryOfOrigin
+    averageScore
+    popularity
+    favourites
+    trending
+    relations {
+      nodes {
+        ...media
+      }
+    }
+    characters {
+      nodes {
+        name {
+          userPreferred
+        }
+        image {
+          medium
+        }
+      }
+    }
+  }
+}
+
+${MediaFragment}
+`;
+exports.FullSearchQuery = `
+    query FullSearch($page: Int = 1, $id: Int, $type: MediaType = MANGA, $isAdult: Boolean, $search: String, $format: [MediaFormat], $status: MediaStatus, $countryOfOrigin: CountryCode, $source: MediaSource, $season: MediaSeason, $seasonYear: Int, $year: String, $onList: Boolean, $yearLesser: FuzzyDateInt, $yearGreater: FuzzyDateInt, $episodeLesser: Int, $episodeGreater: Int, $durationLesser: Int, $durationGreater: Int, $chapterLesser: Int, $chapterGreater: Int, $volumeLesser: Int, $volumeGreater: Int, $licensedBy: [String], $isLicensed: Boolean, $genres: [String], $excludedGenres: [String], $tags: [String], $excludedTags: [String], $minimumTagRank: Int, $sort: [MediaSort] = [POPULARITY_DESC, SCORE_DESC]) {
+      Page(page: $page, perPage: 30) {
+        pageInfo {
+          total
+          perPage
+          currentPage
+          lastPage
+          hasNextPage
+        }
+        media(id: $id, type: $type, season: $season, format_in: $format, status: $status, countryOfOrigin: $countryOfOrigin, source: $source, search: $search, onList: $onList, seasonYear: $seasonYear, startDate_like: $year, startDate_lesser: $yearLesser, startDate_greater: $yearGreater, episodes_lesser: $episodeLesser, episodes_greater: $episodeGreater, duration_lesser: $durationLesser, duration_greater: $durationGreater, chapters_lesser: $chapterLesser, chapters_greater: $chapterGreater, volumes_lesser: $volumeLesser, volumes_greater: $volumeGreater, licensedBy_in: $licensedBy, isLicensed: $isLicensed, genre_in: $genres, genre_not_in: $excludedGenres, tag_in: $tags, tag_not_in: $excludedTags, minimumTagRank: $minimumTagRank, sort: $sort, isAdult: $isAdult) {
+          ...media
+        }
+      }
+    }
+    ${MediaFragment}
+
+`;
+exports.GenresQuery = `
+    query {
+      genres: GenreCollection
+      tags: MediaTagCollection {
+        name
+        description
+        category
+        isAdult
+      }
+    }`;
+
+},{}],4:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AdvancedTrackerImplementation = void 0;
+const media_1 = require("../utils/media");
+const utils_1 = require("../utils");
+const utils_2 = require("../utils/utils");
+exports.AdvancedTrackerImplementation = {
+    getFullInformation: async function (id) {
+        return (0, media_1.getFullMedia)(id);
+    },
+    getDirectory: async function (request) {
+        if (request.context) {
+            if (request.context.list) {
+                return (0, utils_1.getMediaListCollection)(request.context.list);
+            }
+            if (request.context.discover) {
+                return (0, media_1.getHomePageViewMore)(request.context.discover, request.page);
+            }
+        }
+        const results = await (0, media_1.fullSearch)(request);
+        return {
+            isLastPage: results.length < 30,
+            results,
+        };
+    },
+    getDirectoryConfig: async function (key) {
+        if (key == "viewMore")
+            return {
+                searchable: false,
+            };
+        if (key === "userList")
+            return {
+                searchable: false,
+                sort: {
+                    options: (0, utils_2.getSortOptions)(),
+                    default: {
+                        key: "POPULARITY",
+                        ascending: false,
+                    },
+                    canChangeOrder: true,
+                },
+            };
+        return {
+            filters: await (0, media_1.buildGenres)(),
+            sort: {
+                options: (0, utils_2.getSortOptions)(),
+                default: {
+                    key: "POPULARITY",
+                    ascending: false,
+                },
+                canChangeOrder: true,
+            },
+        };
+    },
+    toggleFavorite: function (state) {
+        throw new Error("Function not implemented.");
+    },
+};
+
+},{"../utils":10,"../utils/media":11,"../utils/utils":15}],5:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.OAuthImplementation = exports.AuthImplementation = void 0;
+const utils_1 = require("../utils");
+const gql_1 = require("../gql");
+exports.AuthImplementation = {
+    async getAuthenticatedUser() {
+        const isAuthenticated = await (0, utils_1.authenticated)();
+        if (!isAuthenticated)
+            return null;
+        const response = await (0, utils_1.request)(gql_1.CurrentViewerQuery);
+        const { name: handle, avatar: { large: avatar }, bannerImage, } = response.data.Viewer;
+        await SecureStore.set("user", handle);
+        return {
+            handle,
+            avatar,
+            bannerImage,
+        };
+    },
+    async handleUserSignOut() {
+        await SecureStore.remove("access_token");
+        await SecureStore.remove("expires");
+        await SecureStore.remove("handle");
+        await SecureStore.remove("user");
+    },
+};
+exports.OAuthImplementation = {
+    ...exports.AuthImplementation,
+    async getOAuthRequestURL() {
+        return {
+            url: "https://anilist.co/api/v2/oauth/authorize",
+            params: {
+                client_id: "8119",
+                response_type: "token",
+            },
+        };
+    },
+    async handleOAuthCallback(response) {
+        const fragment = `?${response.split("#")[1]}`;
+        const accessToken = (0, utils_1.getParamFromURL)(fragment, "access_token");
+        const expiresIn = (0, utils_1.getParamFromURL)(fragment, "expires_in");
+        if (!accessToken)
+            throw new Error("Failed");
+        // Set Access Token to Key Chain
+        await SecureStore.set("access_token", accessToken);
+        // Set Expiry
+        if (!expiresIn)
+            return;
+        const secondsFromNow = parseInt(expiresIn);
+        if (!secondsFromNow)
+            return;
+        var date = new Date();
+        date.setSeconds(date.getSeconds() + secondsFromNow);
+        await SecureStore.set("expires", date);
+    },
+};
+
+},{"../gql":1,"../utils":10}],6:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.LinkProvider = exports.LinkResolver = void 0;
+const utils_1 = require("../utils");
+const media_1 = require("../utils/media");
+exports.LinkResolver = {
+    getSectionsForPage: function (link) {
+        const key = link.key;
+        switch (key) {
+            case "home": {
+                return (0, media_1.getHomePage)();
+            }
+        }
+        throw new Error(`link not resolved [${key}]`);
+    },
+    resolvePageSection: function (link, sectionKey) {
+        throw new Error("non resolving provider.");
+    },
+};
+exports.LinkProvider = {
+    getLibraryPageLinks: async function () {
+        const isAuthenticated = await (0, utils_1.authenticated)();
+        if (!isAuthenticated)
+            return [];
+        const { mediaListOptions: { mangaList: { sectionOrder: lists }, }, } = await (0, utils_1.getViewer)();
+        return lists.map((list) => ({
+            title: list,
+            link: {
+                request: {
+                    page: 1,
+                    context: {
+                        list,
+                    },
+                    configKey: "userList",
+                },
+            },
+        }));
+    },
+    getBrowsePageLinks: async function () {
+        return [
+            {
+                title: "Discover",
+                link: {
+                    page: { key: "home" },
+                },
+            },
+            {
+                title: "All Manga",
+                link: {
+                    request: { page: 1 },
+                },
+            },
+        ];
+    },
+};
+
+},{"../utils":10,"../utils/media":11}],7:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TrackerImplementation = void 0;
+const form_1 = require("../utils/form");
+const utils_1 = require("../utils");
+const media_1 = require("../utils/media");
+const gql_1 = require("../gql");
+exports.TrackerImplementation = {
+    async didUpdateLastReadChapter(id, progress) {
+        const variables = {
+            mediaId: (0, utils_1.parseID)(id),
+            progress: progress.chapter,
+            progressVolumes: progress.volume,
+        };
+        await (0, utils_1.request)(gql_1.MediaListEntryMutation, variables);
+    },
+    getResultsForTitles: function (titles) {
+        return (0, media_1.getSearchResults)(titles);
+    },
+    getTrackItem: function (id) {
+        return (0, utils_1.parseTrackItem)(id);
+    },
+    beginTracking: async function (id, status) {
+        const variables = {
+            mediaId: (0, utils_1.parseID)(id),
+            status,
+        };
+        await (0, utils_1.request)(gql_1.MediaListEntryMutation, variables);
+    },
+    getEntryForm: async function (id) {
+        return (0, form_1.buildEntryForm)(id);
+    },
+    didSubmitEntryForm: function (id, form) {
+        return (0, form_1.handleSubmitEntryForm)(id, form);
+    },
+    didUpdateStatus: async function (id, status) {
+        const variables = {
+            mediaId: (0, utils_1.parseID)(id),
+            status,
+        };
+        await (0, utils_1.request)(gql_1.MediaListEntryMutation, variables);
+    },
+};
+
+},{"../gql":1,"../utils":10,"../utils/form":9,"../utils/media":11}],8:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Target = void 0;
+const tracker_1 = require("./impl/tracker");
+const auth_1 = require("./impl/auth");
+const pageLink_1 = require("./impl/pageLink");
+const advancedTracker_1 = require("./impl/advancedTracker");
+const info = {
+    id: "co.anilist",
+    name: "Anilist",
+    version: 1.0,
+    website: "https://anilist.co",
+    thumbnail: "anilist.png",
+};
+const config = {
+    linkKeys: ["anilist", "al", "anilist.co"],
+};
+exports.Target = {
+    info,
+    config,
+    ...advancedTracker_1.AdvancedTrackerImplementation,
+    ...tracker_1.TrackerImplementation,
+    ...auth_1.OAuthImplementation,
+    ...pageLink_1.LinkProvider,
+    ...pageLink_1.LinkResolver,
+};
+
+},{"./impl/advancedTracker":4,"./impl/auth":5,"./impl/pageLink":6,"./impl/tracker":7}],9:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.handleSubmitEntryForm = exports.buildEntryForm = void 0;
+const daisuke_1 = require("@suwatte/daisuke");
+const mediaList_1 = require("./mediaList");
+const _1 = require(".");
+const gql_1 = require("../gql");
+const daisuke_2 = require("@suwatte/daisuke");
+const StarSystem = new Array(6).fill(0).map((_, idx) => ({
+    key: `${idx * 20}`,
+    label: idx !== 0 ? "⭐".repeat(idx) : "-",
+}));
+const FaceSystem = [
+    {
+        key: "0",
+        label: "-",
+    },
+    {
+        key: "35",
+        label: "🙁👎",
+    },
+    {
+        key: "60",
+        label: "😐",
+    },
+    {
+        key: "85",
+        label: "😃👍",
+    },
+];
+/**
+ * Builds the Entry Edit Form for the given title using the media list entry
+ */
+const buildEntryForm = async (id) => {
+    const { mediaListEntry: entry, chapters, volumes, } = await (0, mediaList_1.getMediaListEntry)(id);
+    if (!entry)
+        throw new Error(`Not Tracking ${id}`);
+    return (0, daisuke_2.Generate)({
+        sections: [
+            // Score
+            (0, daisuke_2.Generate)({
+                children: [await ScoreComponent(entry.score)],
+            }),
+            // Progress
+            (0, daisuke_2.Generate)({
+                header: "Reading Progress",
+                children: [
+                    (0, daisuke_1.UIStepper)({
+                        key: "progress",
+                        label: "Chapter",
+                        value: entry.progress,
+                        upperBound: chapters,
+                        allowDecimal: true,
+                    }),
+                    (0, daisuke_1.UIStepper)({
+                        key: "progressVolumes",
+                        label: "Volume",
+                        value: entry.progressVolumes ?? 0,
+                        upperBound: volumes,
+                    }),
+                ],
+            }),
+            // Repeats
+            {
+                children: [
+                    (0, daisuke_1.UIStepper)({
+                        key: "repeat",
+                        label: "Total rereads",
+                        value: entry.repeat,
+                    }),
+                ],
+            },
+            // Dates
+            {
+                children: [
+                    (0, daisuke_1.UIDatePicker)({
+                        key: "startedAt",
+                        label: "Start Date",
+                        optional: "true",
+                        value: entry.startedAt && (0, _1.parseFuzzyDate)(entry.startedAt),
+                    }),
+                    (0, daisuke_1.UIDatePicker)({
+                        key: "completedAt",
+                        label: "Completion Date",
+                        optional: "true",
+                        value: entry.completedAt && (0, _1.parseFuzzyDate)(entry.completedAt),
+                    }),
+                ],
+            },
+            // Notes
+            {
+                header: "Notes",
+                children: [
+                    (0, daisuke_1.UITextField)({
+                        key: "notes",
+                        label: "Notes",
+                        optional: "true",
+                        value: entry.notes,
+                    }),
+                ],
+            },
+            {
+                children: [
+                    (0, daisuke_1.UIMultiPicker)({
+                        key: "customLists",
+                        label: "Custom Lists",
+                        options: entry.customLists.map((v) => ({
+                            key: v.name,
+                            label: v.name,
+                        })),
+                        value: entry.customLists
+                            .filter((v) => v.enabled)
+                            .map((v) => v.name),
+                    }),
+                    (0, daisuke_1.UIToggle)({
+                        key: "hiddenFromStatusLists",
+                        label: "Hide From Status List",
+                        value: entry.hiddenFromStatusLists,
+                    }),
+                    (0, daisuke_1.UIToggle)({
+                        key: "private",
+                        label: "Private Entry",
+                        value: entry.private,
+                    }),
+                ],
+            },
+        ],
+    });
+};
+exports.buildEntryForm = buildEntryForm;
+const ScoreComponent = async (score) => {
+    const label = "Score";
+    const scoreFormat = await (0, _1.getScoreFormat)();
+    const numSystemScore = (score) => {
+        if (score === 0)
+            return 0;
+        switch (scoreFormat) {
+            case "POINT_10_DECIMAL":
+                return Math.round(score / 10);
+            case "POINT_10":
+                return Math.trunc(score / 10);
+            default:
+                return score;
+        }
+    };
+    switch (scoreFormat) {
+        case "POINT_5":
+        case "POINT_3": {
+            const options = scoreFormat === "POINT_3" ? FaceSystem : StarSystem;
+            return (0, daisuke_1.UIPicker)({
+                key: "score",
+                label,
+                value: score ? getClosestKey(score, options) : options?.[0].key,
+                options,
+            });
+        }
+        default: {
+            return (0, daisuke_1.UIStepper)({
+                key: "score",
+                label,
+                value: score ? numSystemScore(score) : 0,
+                allowDecimal: scoreFormat === "POINT_10_DECIMAL" ? true : undefined,
+                upperBound: scoreFormat === "POINT_100" ? 100 : 10,
+            });
+        }
+    }
+};
+/**
+ * Updates a media entry on anilist using the provided form
+ */
+const handleSubmitEntryForm = async (id, form) => {
+    const mediaId = (0, _1.parseID)(id);
+    // Dates
+    const startedAt = form.startedAt === null
+        ? null
+        : form.startedAt
+            ? (0, _1.convertToFuzzyDate)(new Date(form.startedAt))
+            : undefined;
+    const completedAt = form.completedAt === null
+        ? null
+        : form.completedAt
+            ? (0, _1.convertToFuzzyDate)(new Date(form.completedAt))
+            : undefined;
+    // Score
+    const calc = (score) => Math.trunc((0, _1.parseID)(score));
+    const scoreFormat = await (0, _1.getScoreFormat)();
+    const calcNum = (score) => {
+        if (scoreFormat !== "POINT_100") {
+            return Math.trunc(score * 10);
+        }
+        return Math.trunc(score);
+    };
+    const score = form.score
+        ? typeof form.score === "string"
+            ? calc(form.score)
+            : calcNum(form.score)
+        : undefined;
+    // Request
+    const variables = {
+        mediaId,
+        ...form,
+        // Fix Dates
+        startedAt,
+        completedAt,
+        // Fix Score which can either be a string or a number depending on the user's scoring format
+        score,
+    };
+    await (0, _1.request)(gql_1.MediaListEntryMutation, variables);
+};
+exports.handleSubmitEntryForm = handleSubmitEntryForm;
+const getClosestKey = (num, options) => {
+    let closestKey = options[0].key;
+    let closestDiff = Math.abs(num - Number(options[0].key));
+    for (let i = 1; i < options.length; i++) {
+        let diff = Math.abs(num - Number(options[i].key));
+        if (diff < closestDiff) {
+            closestDiff = diff;
+            closestKey = options[i].key;
+        }
+    }
+    return closestKey;
+};
+
+},{".":10,"../gql":1,"./mediaList":12,"@suwatte/daisuke":16}],10:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.preferenceKeys = exports.parseWebUrl = exports.convertToFuzzyDate = exports.parseFuzzyDate = exports.parseID = exports.request = exports.AUTHENTICATED_CLIENT = exports.authenticated = exports.getParamFromURL = void 0;
+const daisuke_1 = require("@suwatte/daisuke");
+__exportStar(require("./form"), exports);
+__exportStar(require("./mediaList"), exports);
+__exportStar(require("./user"), exports);
+/**
+ * Parse Param from url, URL and URLSearchParam not available in JSCore environment
+ */
+function getParamFromURL(url, param) {
+    var regex = new RegExp("[?&]" + param + "(=([^&#]*)|&|#|$)"), results = regex.exec(url);
+    if (!results)
+        return null;
+    if (!results[2])
+        return "";
+    return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
+exports.getParamFromURL = getParamFromURL;
+/**
+ * Checks if a user is authenticated
+ */
+async function authenticated() {
+    const token = await SecureStore.get("access_token");
+    const expiry = await SecureStore.get("expires");
+    if (!token)
+        return false;
+    if (!expiry || !(typeof expiry === "string"))
+        return false;
+    const expiryDate = new Date(expiry);
+    const now = new Date();
+    if (now > expiryDate) {
+        // Token expired remove keys
+        await SecureStore.remove("access_token");
+        await SecureStore.remove("expires");
+        await SecureStore.remove("handle");
+        return false;
+    }
+    return true;
+}
+exports.authenticated = authenticated;
+exports.AUTHENTICATED_CLIENT = new daisuke_1.NetworkClientBuilder()
+    .addRequestInterceptor(async (req) => {
+    req.headers = {
+        ...(req.headers || {}),
+        "Content-Type": "application/json",
+        Accept: "application/json",
+    };
+    const isAuthenticated = await authenticated();
+    if (!isAuthenticated)
+        return req;
+    const token = await SecureStore.string("access_token");
+    req.headers = {
+        ...(req.headers || {}),
+        Authorization: `Bearer ${token}`,
+    };
+    return req;
+})
+    .build();
+/**
+ * Makes a request to the Anilist GraphQL API
+ */
+async function request(query, variables = {}) {
+    const client = exports.AUTHENTICATED_CLIENT;
+    const { data } = await client.post("https://graphql.anilist.co", {
+        body: {
+            query: query.trim(),
+            variables,
+        },
+    });
+    const object = JSON.parse(data);
+    return object;
+}
+exports.request = request;
+/**
+ * Parses a string id into an integer id
+ */
+const parseID = (id) => {
+    const intId = Number(id);
+    if (isNaN(intId))
+        throw new Error("Invalid Media ID");
+    return intId;
+};
+exports.parseID = parseID;
+/**
+ * parses an anilist fuzzy date to a date
+ */
+const parseFuzzyDate = (date) => {
+    if (!date.year) {
+        return undefined;
+    }
+    return new Date(date.year, date.month - 1, date.day);
+};
+exports.parseFuzzyDate = parseFuzzyDate;
+/**
+ * converts a js date to an anilist fuzzy date
+ */
+const convertToFuzzyDate = (date) => {
+    return {
+        year: date.getFullYear(),
+        month: date.getMonth() + 1,
+        day: date.getDate(),
+    };
+};
+exports.convertToFuzzyDate = convertToFuzzyDate;
+const parseWebUrl = (id) => `https://anilist.co/manga/${id}`;
+exports.parseWebUrl = parseWebUrl;
+exports.preferenceKeys = {
+    nsfw: "nsfw",
+};
+
+},{"./form":9,"./mediaList":12,"./user":14,"@suwatte/daisuke":16}],11:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.buildGenres = exports.groupTags = exports.fullSearch = exports.getFullMedia = exports.getHomePageViewMore = exports.getHomePage = exports.simpleSearch = exports.getSearchResults = void 0;
+const daisuke_1 = require("@suwatte/daisuke");
+const _1 = require(".");
+const gql_1 = require("../gql");
+const parsers_1 = require("./parsers");
+const utils_1 = require("./utils");
+const getSearchResults = async (titles) => {
+    for (const title of titles) {
+        let results = await (0, exports.simpleSearch)(title);
+        if (results.length == 0)
+            continue;
+        return results;
+    }
+    return [];
+};
+exports.getSearchResults = getSearchResults;
+const simpleSearch = async (search) => {
+    const { data: { Page }, } = await (0, _1.request)(gql_1.SimpleSearchQuery, {
+        search,
+    });
+    const media = Page?.media;
+    if (!media)
+        return [];
+    return media.map(parsers_1.mediaToTrackItem);
+};
+exports.simpleSearch = simpleSearch;
+const TITLES = {
+    trending: "Trending Titles",
+    popular: "Popular Titles",
+    manhwa: "Top Manhwa",
+    manga: "Top Manga",
+    top: "Top 100",
+};
+const getHomePage = async () => {
+    const { data } = await (0, _1.request)(gql_1.HomePageQuery);
+    return Object.keys(data).map((key) => ({
+        key,
+        title: TITLES[key],
+        items: data[key].media.map((v) => ({ item: (0, parsers_1.mediaToTrackItem)(v) })),
+        viewMoreLink: {
+            request: { context: { discover: key }, page: 1, configKey: "viewMore" },
+        },
+    }));
+};
+exports.getHomePage = getHomePage;
+const getHomePageViewMore = async (key, page) => {
+    const { data } = await (0, _1.request)((0, gql_1.HomePageViewMoreQuery)(key), {
+        page,
+    });
+    const results = data[key].media.map(parsers_1.mediaToTrackItem);
+    return {
+        isLastPage: results.length < 30,
+        results,
+    };
+};
+exports.getHomePageViewMore = getHomePageViewMore;
+const getFullMedia = async (id) => {
+    const { data: { Media: media }, } = await (0, _1.request)(gql_1.FullMediaQuery, {
+        id: (0, _1.parseID)(id),
+    });
+    return (0, parsers_1.mediaToFullTrackItem)(media);
+};
+exports.getFullMedia = getFullMedia;
+const fullSearch = async (query) => {
+    const sort = query.sort
+        ? [(0, utils_1.getSortKey)(query.sort.key, query.sort.ascending), "SCORE_DESC"]
+        : ["POPULARITY_DESC", "SCORE_DESC"];
+    const variables = {
+        page: query.page,
+        search: query.query,
+        sort,
+        ...(query.filters && (0, utils_1.convertSTTFilter)(query.filters)),
+        ...(query.tag && {
+            ...(query.tag.propertyId === "genres" && { genres: [query.tag.tagId] }),
+            ...(query.tag.propertyId !== "genres" && { tags: [query.tag.tagId] }),
+        }),
+    };
+    const { data: { Page }, } = await (0, _1.request)(gql_1.FullSearchQuery, variables);
+    const media = Page?.media;
+    if (!media)
+        return [];
+    const results = media.map(parsers_1.mediaToTrackItem);
+    return results;
+};
+exports.fullSearch = fullSearch;
+const groupTags = (tags) => tags.reduce((r, a) => {
+    r[a.category] = r[a.category] || [];
+    if (!a.isAdult)
+        r[a.category].push(a);
+    return r;
+}, Object.create(null));
+exports.groupTags = groupTags;
+const buildGenres = async () => {
+    const { data: { genres, tags }, } = await (0, _1.request)(gql_1.GenresQuery);
+    const genreFilter = {
+        id: "genres",
+        title: "Genres",
+        label: "Genres",
+        type: daisuke_1.FilterType.EXCLUDABLE_MULTISELECT,
+        options: genres.map((v) => ({ key: v, label: v })),
+    };
+    const tagFilters = [];
+    // reference:  https://stackoverflow.com/a/40774906
+    const groupedTags = (0, exports.groupTags)(tags);
+    for (const key in groupedTags) {
+        const tags = groupedTags[key];
+        const options = tags.map((v) => ({ key: v.name, label: v.name }));
+        if (options.length == 0) {
+            continue;
+        }
+        tagFilters.push({
+            id: key,
+            title: key.replaceAll("-", " "),
+            type: daisuke_1.FilterType.EXCLUDABLE_MULTISELECT,
+            options,
+        });
+    }
+    return [genreFilter, ...tagFilters];
+};
+exports.buildGenres = buildGenres;
+
+},{".":10,"../gql":1,"./parsers":13,"./utils":15,"@suwatte/daisuke":16}],12:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getMediaListCollection = exports.parseTrackItem = exports.getMediaListEntry = void 0;
+const _1 = require(".");
+const gql_1 = require("../gql");
+/**
+ * Gets the media list entry for a given title
+ */
+const getMediaListEntry = async (id) => {
+    const data = await (0, _1.request)(gql_1.MediaListEntryQuery, {
+        id: (0, _1.parseID)(id),
+    });
+    return data.data.Media;
+};
+exports.getMediaListEntry = getMediaListEntry;
+const parseTrackItem = async (id) => {
+    const { mediaListEntry: entry, title: { userPreferred: title }, coverImage: { large: cover }, chapters, } = await (0, exports.getMediaListEntry)(id);
+    return {
+        id,
+        title,
+        cover,
+        webUrl: `https://anilist.co/manga/${id}`,
+        ...(entry && {
+            entry: {
+                status: entry.status,
+                progress: {
+                    maxAvailableChapter: chapters,
+                    lastReadChapter: entry.progress,
+                    lastReadVolume: entry.progressVolumes,
+                },
+            },
+        }),
+    };
+};
+exports.parseTrackItem = parseTrackItem;
+const getMediaListCollection = async (name) => {
+    const userName = await SecureStore.get("user");
+    if (!userName)
+        throw new Error("failed to get username");
+    const { data: { MediaListCollection: { lists }, }, } = await (0, _1.request)(gql_1.MediaListCollectionQuery, {
+        userName,
+    });
+    const target = lists.find((v) => v.name === name);
+    if (!target)
+        throw new Error("list not found.");
+    const results = target.entries.map((v) => ({
+        id: `${v.media.id}`,
+        title: v.media.title.userPreferred,
+        cover: v.media.coverImage.large,
+        webUrl: (0, _1.parseWebUrl)(v.media.id),
+        entry: {
+            status: v.status,
+            progress: {
+                lastReadChapter: v.progress,
+                lastReadVolume: v.progressVolume,
+            },
+        },
+    }));
+    return {
+        isLastPage: true,
+        results,
+    };
+};
+exports.getMediaListCollection = getMediaListCollection;
+
+},{".":10,"../gql":1}],13:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.mediaToFullTrackItem = exports.mediaToTrackItem = void 0;
+const _1 = require(".");
+const utils_1 = require("./utils");
+const media_1 = require("./media");
+const mediaToTrackItem = (m) => ({
+    id: m.id.toString(),
+    title: m.title.userPreferred,
+    cover: m.coverImage.large,
+    webUrl: (0, _1.parseWebUrl)(m.id),
+    ...(m.mediaListEntry && {
+        entry: {
+            status: m.mediaListEntry.status,
+            progress: {
+                lastReadChapter: m.mediaListEntry.progress ?? 0,
+                lastReadVolume: m.mediaListEntry.progressVolumes,
+                maxAvailableChapter: m.chapters,
+            },
+        },
+    }),
+});
+exports.mediaToTrackItem = mediaToTrackItem;
+const mediaToFullTrackItem = (media) => ({
+    id: media.id.toString(),
+    title: media.title.userPreferred,
+    cover: media.coverImage.large,
+    webUrl: media.siteUrl ?? (0, _1.parseWebUrl)(media.id),
+    ...(media.mediaListEntry && {
+        entry: {
+            status: media.mediaListEntry.status,
+            progress: {
+                lastReadChapter: media.mediaListEntry.progress ?? 0,
+                lastReadVolume: media.mediaListEntry.progressVolumes,
+                maxAvailableChapter: media.chapters,
+            },
+        },
+    }),
+    summary: media.description,
+    bannerCover: media.bannerImage,
+    isNSFW: media.isAdult,
+    isFavorite: media.isFavourite,
+    relatedTitles: media.relations?.nodes
+        ?.filter((v) => v.type === "MANGA")
+        .map(exports.mediaToTrackItem),
+    recommendedTitles: media.recommendations?.nodes?.map((v) => (0, exports.mediaToTrackItem)(v.mediaRecommendation)),
+    links: media.externalLinks?.map((v) => ({ label: v.site, url: v.url })),
+    additionalTitles: media.synonyms,
+    characters: media.characters?.nodes?.map((v) => ({
+        name: v.name.userPreferred,
+        image: v.image.medium,
+        summary: v.description,
+    })),
+    status: (0, utils_1.convertStatus)(media.status ?? ""),
+    info: [
+        `${media.averageScore ?? 0}/100 Rating`,
+        `${(media.favourites ?? 0).toLocaleString()} Favorites ❤`,
+        `${media.popularity?.toLocaleString()} Users Tracking`,
+        `${media.trending?.toLocaleString()} Reads This Hour`,
+    ],
+    properties: [
+        {
+            id: "genres",
+            label: "Genres",
+            tags: media.genres?.map((id) => ({ label: id, id })) ?? [],
+        },
+        ...Object.entries((0, media_1.groupTags)(media.tags ?? [])).map(([id, tags]) => {
+            return {
+                id,
+                label: id.replace("-", ": ").replaceAll("-", " "),
+                tags: tags.map((v) => ({ id: v.name, label: v.name })),
+            };
+        }),
+    ],
+});
+exports.mediaToFullTrackItem = mediaToFullTrackItem;
+
+},{".":10,"./media":11,"./utils":15}],14:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getViewer = exports.getScoreFormat = void 0;
+const _1 = require(".");
+const gql_1 = require("../gql");
+/**
+ * Get's the scoring format for the current authenticated user
+ */
+const getScoreFormat = async () => {
+    if (!(0, _1.authenticated)())
+        throw new Error("Not Signed in.");
+    const response = await (0, _1.request)(gql_1.CurrentViewerScoreFormatQuery);
+    return response.data.Viewer.mediaListOptions.scoreFormat;
+};
+exports.getScoreFormat = getScoreFormat;
+const getViewer = async () => {
+    const response = await (0, _1.request)(gql_1.CurrentViewerQuery);
+    return response.data.Viewer;
+};
+exports.getViewer = getViewer;
+
+},{".":10,"../gql":1}],15:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.convertStatus = exports.convertSTTFilter = exports.getSortKey = exports.getSortOptions = void 0;
+const daisuke_1 = require("@suwatte/daisuke");
+const sortKeys = [
+    "Popularity",
+    "Trending",
+    "Favourites",
+    "Score",
+    "Search Match",
+    "Chapters",
+];
+const getSortOptions = () => {
+    return sortKeys.map((v) => ({
+        label: v,
+        key: v.replace(" ", "_").toUpperCase(),
+    }));
+};
+exports.getSortOptions = getSortOptions;
+const getSortKey = (key, ascending) => ascending ? key : `${key}_DESC`;
+exports.getSortKey = getSortKey;
+const convertSTTFilter = (filters) => {
+    const object = {};
+    for (const key in filters) {
+        const { included, excluded } = filters[key];
+        switch (key) {
+            case "genres": {
+                if (included && included.length != 0)
+                    object.genres = filters[key].included;
+                if (excluded && excluded.length != 0)
+                    object.excludedGenres = filters[key].excluded;
+                break;
+            }
+            default: {
+                object.tags = object.tags || [];
+                object.tags.push(...included);
+                object.excludedTags = object.excludedTags || [];
+                object.excludedTags.push(...excluded);
+                break;
+            }
+        }
+    }
+    return object;
+};
+exports.convertSTTFilter = convertSTTFilter;
+const convertStatus = (key) => {
+    switch (key) {
+        case "FINISHED":
+            return daisuke_1.PublicationStatus.COMPLETED;
+        case "RELEASING":
+            return daisuke_1.PublicationStatus.ONGOING;
+        case "NOT_YET_RELEASED":
+            return daisuke_1.PublicationStatus.UNKNOWN;
+        case "HIATUS":
+            return daisuke_1.PublicationStatus.HIATUS;
+    }
+    return;
+};
+exports.convertStatus = convertStatus;
+
+},{"@suwatte/daisuke":16}],16:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./runners"), exports);
+__exportStar(require("./types"), exports);
+
+},{"./runners":36,"./types":59}],17:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+
+},{}],18:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],19:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],20:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],21:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],22:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],23:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./ContentEvent"), exports);
+__exportStar(require("./ContentSync"), exports);
+__exportStar(require("./ChapterEvent"), exports);
+__exportStar(require("./StreamContextProvider"), exports);
+__exportStar(require("./ContextMenuHandler"), exports);
+
+},{"./ChapterEvent":18,"./ContentEvent":19,"./ContentSync":20,"./ContextMenuHandler":21,"./StreamContextProvider":22}],24:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./handlers"), exports);
+__exportStar(require("./ContentSource"), exports);
+
+},{"./ContentSource":17,"./handlers":23}],25:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],26:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],27:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./ContentTracker"), exports);
+__exportStar(require("./AdvancedTracker"), exports);
+
+},{"./AdvancedTracker":25,"./ContentTracker":26}],28:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.BasicAuthenticationUIIdentifier = void 0;
+var BasicAuthenticationUIIdentifier;
+(function (BasicAuthenticationUIIdentifier) {
+    BasicAuthenticationUIIdentifier[BasicAuthenticationUIIdentifier["EMAIL"] = 0] = "EMAIL";
+    BasicAuthenticationUIIdentifier[BasicAuthenticationUIIdentifier["USERNAME"] = 1] = "USERNAME";
+})(BasicAuthenticationUIIdentifier || (exports.BasicAuthenticationUIIdentifier = BasicAuthenticationUIIdentifier = {}));
+
+},{}],29:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],30:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],31:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],32:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],33:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],34:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./Authentication"), exports);
+__exportStar(require("./Preferences"), exports);
+__exportStar(require("./ImageRequest"), exports);
+__exportStar(require("./DirectoryHandler"), exports);
+__exportStar(require("./PageProvider"), exports);
+__exportStar(require("./RequiresSetup"), exports);
+
+},{"./Authentication":28,"./DirectoryHandler":29,"./ImageRequest":30,"./PageProvider":31,"./Preferences":32,"./RequiresSetup":33}],35:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.RunnerEnvironment = void 0;
+__exportStar(require("./extensions"), exports);
+var RunnerEnvironment;
+(function (RunnerEnvironment) {
+    RunnerEnvironment[RunnerEnvironment["SOURCE"] = 0] = "SOURCE";
+    RunnerEnvironment[RunnerEnvironment["TRACKER"] = 1] = "TRACKER";
+})(RunnerEnvironment || (exports.RunnerEnvironment = RunnerEnvironment = {}));
+
+},{"./extensions":34}],36:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./ContentSource"), exports);
+__exportStar(require("./Runner"), exports);
+__exportStar(require("./ContentTracker"), exports);
+
+},{"./ContentSource":24,"./ContentTracker":27,"./Runner":35}],37:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],38:[function(require,module,exports){
+"use strict";
+// Picker
+Object.defineProperty(exports, "__esModule", { value: true });
+
+},{}],39:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UIStepper = exports.UIButton = exports.UIDatePicker = exports.UITextField = exports.UIToggle = exports.UIMultiPicker = exports.UIPicker = void 0;
+const UIElements_1 = require("./UIElements");
+const UIPicker = (props) => (Object.assign(Object.assign({}, props), { type: UIElements_1.UIComponentType.SELECT }));
+exports.UIPicker = UIPicker;
+const UIMultiPicker = (props) => (Object.assign(Object.assign({}, props), { type: UIElements_1.UIComponentType.MULTISELECT }));
+exports.UIMultiPicker = UIMultiPicker;
+const UIToggle = (props) => (Object.assign(Object.assign({}, props), { type: UIElements_1.UIComponentType.TOGGLE }));
+exports.UIToggle = UIToggle;
+const UITextField = (props) => (Object.assign(Object.assign({}, props), { type: UIElements_1.UIComponentType.TEXTFIELD }));
+exports.UITextField = UITextField;
+const UIDatePicker = (props) => (Object.assign(Object.assign({}, props), { type: UIElements_1.UIComponentType.DATEPICKER }));
+exports.UIDatePicker = UIDatePicker;
+const UIButton = (props) => (Object.assign(Object.assign({}, props), { type: UIElements_1.UIComponentType.BUTTON }));
+exports.UIButton = UIButton;
+const UIStepper = (props) => (Object.assign(Object.assign({}, props), { type: UIElements_1.UIComponentType.STEPPER }));
+exports.UIStepper = UIStepper;
+
+},{"./UIElements":40}],40:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UIComponentType = void 0;
+var UIComponentType;
+(function (UIComponentType) {
+    UIComponentType[UIComponentType["SELECT"] = 0] = "SELECT";
+    UIComponentType[UIComponentType["MULTISELECT"] = 1] = "MULTISELECT";
+    UIComponentType[UIComponentType["STEPPER"] = 2] = "STEPPER";
+    UIComponentType[UIComponentType["TOGGLE"] = 3] = "TOGGLE";
+    UIComponentType[UIComponentType["TEXTFIELD"] = 4] = "TEXTFIELD";
+    UIComponentType[UIComponentType["BUTTON"] = 5] = "BUTTON";
+    UIComponentType[UIComponentType["DATEPICKER"] = 6] = "DATEPICKER";
+})(UIComponentType || (exports.UIComponentType = UIComponentType = {}));
+
+},{}],41:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./Form"), exports);
+__exportStar(require("./UIElements"), exports);
+__exportStar(require("./UIDefinitions"), exports);
+__exportStar(require("./UIElementBuilders"), exports);
+
+},{"./Form":37,"./UIDefinitions":38,"./UIElementBuilders":39,"./UIElements":40}],42:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DefinedLanguages = void 0;
+var DefinedLanguages;
+(function (DefinedLanguages) {
+    DefinedLanguages["UNIVERSAL"] = "UNIVERSAL";
+    DefinedLanguages["ENGLISH"] = "en_US";
+    DefinedLanguages["KOREAN"] = "ko_KR";
+    DefinedLanguages["JAPANESE"] = "ja_JP";
+    DefinedLanguages["FRENCH"] = "fr_FR";
+    DefinedLanguages["CHINESE"] = "zh-CN";
+    DefinedLanguages["SPANISH"] = "es_ES";
+    DefinedLanguages["PORTUGUESE"] = "pt_BR";
+})(DefinedLanguages || (exports.DefinedLanguages = DefinedLanguages = {}));
+
+},{}],43:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],44:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],45:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ContentType = exports.ReadingFlag = exports.ReadingMode = exports.PublicationStatus = void 0;
+// Enums
+var PublicationStatus;
+(function (PublicationStatus) {
+    PublicationStatus[PublicationStatus["UNKNOWN"] = 0] = "UNKNOWN";
+    PublicationStatus[PublicationStatus["ONGOING"] = 1] = "ONGOING";
+    PublicationStatus[PublicationStatus["COMPLETED"] = 2] = "COMPLETED";
+    PublicationStatus[PublicationStatus["CANCELLED"] = 3] = "CANCELLED";
+    PublicationStatus[PublicationStatus["HIATUS"] = 4] = "HIATUS";
+})(PublicationStatus || (exports.PublicationStatus = PublicationStatus = {}));
+/**
+ * The method in which the content can be read
+ */
+var ReadingMode;
+(function (ReadingMode) {
+    ReadingMode[ReadingMode["PAGED_MANGA"] = 0] = "PAGED_MANGA";
+    ReadingMode[ReadingMode["PAGED_COMIC"] = 1] = "PAGED_COMIC";
+    ReadingMode[ReadingMode["PAGED_VERTICAL"] = 2] = "PAGED_VERTICAL";
+    ReadingMode[ReadingMode["WEBTOON"] = 3] = "WEBTOON";
+    ReadingMode[ReadingMode["WEB"] = 4] = "WEB";
+})(ReadingMode || (exports.ReadingMode = ReadingMode = {}));
+var ReadingFlag;
+(function (ReadingFlag) {
+    ReadingFlag[ReadingFlag["READING"] = 0] = "READING";
+    ReadingFlag[ReadingFlag["PLANNED"] = 1] = "PLANNED";
+    ReadingFlag[ReadingFlag["COMPLETED"] = 2] = "COMPLETED";
+    ReadingFlag[ReadingFlag["DROPPED"] = 3] = "DROPPED";
+    ReadingFlag[ReadingFlag["REREADING"] = 4] = "REREADING";
+    ReadingFlag[ReadingFlag["PAUSED"] = 5] = "PAUSED";
+    ReadingFlag[ReadingFlag["UNKNOWN"] = 6] = "UNKNOWN";
+})(ReadingFlag || (exports.ReadingFlag = ReadingFlag = {}));
+var ContentType;
+(function (ContentType) {
+    ContentType[ContentType["MANGA"] = 0] = "MANGA";
+    ContentType[ContentType["MANHUA"] = 1] = "MANHUA";
+    ContentType[ContentType["MANHWA"] = 2] = "MANHWA";
+    ContentType[ContentType["COMIC"] = 3] = "COMIC";
+    ContentType[ContentType["NOVEL"] = 4] = "NOVEL";
+})(ContentType || (exports.ContentType = ContentType = {}));
+
+},{}],46:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],47:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],48:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ProviderLinkType = void 0;
+var ProviderLinkType;
+(function (ProviderLinkType) {
+    ProviderLinkType[ProviderLinkType["WEBSITE"] = 0] = "WEBSITE";
+    ProviderLinkType[ProviderLinkType["TWITTER"] = 1] = "TWITTER";
+    ProviderLinkType[ProviderLinkType["DISCORD"] = 2] = "DISCORD";
+    ProviderLinkType[ProviderLinkType["PATREON"] = 3] = "PATREON";
+})(ProviderLinkType || (exports.ProviderLinkType = ProviderLinkType = {}));
+
+},{}],49:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./Content"), exports);
+__exportStar(require("./Highlight"), exports);
+__exportStar(require("./Chapter"), exports);
+__exportStar(require("./ChapterData"), exports);
+__exportStar(require("./Property"), exports);
+__exportStar(require("./Collection"), exports);
+__exportStar(require("./Provider"), exports);
+
+},{"./Chapter":42,"./ChapterData":43,"./Collection":44,"./Content":45,"./Highlight":46,"./Property":47,"./Provider":48}],50:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AuthMethod = void 0;
+var AuthMethod;
+(function (AuthMethod) {
+    AuthMethod[AuthMethod["USERNAME_PW"] = 0] = "USERNAME_PW";
+    AuthMethod[AuthMethod["EMAIL_PW"] = 1] = "EMAIL_PW";
+    AuthMethod[AuthMethod["WEB"] = 2] = "WEB";
+    AuthMethod[AuthMethod["OAUTH"] = 3] = "OAUTH";
+})(AuthMethod || (exports.AuthMethod = AuthMethod = {}));
+
+},{}],51:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],52:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],53:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CatalogRating = void 0;
+var CatalogRating;
+(function (CatalogRating) {
+    /**
+     * Catalog does not contain ANY SUGGESTIVE OR NSFW content
+     */
+    CatalogRating[CatalogRating["SAFE"] = 0] = "SAFE";
+    /**
+     * Catalog may contain SUGGESTIVE OR NSFW content,
+     * runners must hide NSFW content by default,
+     * users will be required to verify they are of age to view NSFW content
+     */
+    CatalogRating[CatalogRating["MIXED"] = 1] = "MIXED";
+    /**
+     * Catalog contains MAINLY SUGGESTIVE OR NSFW content,
+     * users will be required to verify they are of age to view NSFW content
+     */
+    CatalogRating[CatalogRating["NSFW"] = 2] = "NSFW";
+})(CatalogRating || (exports.CatalogRating = CatalogRating = {}));
+
+},{}],54:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./Authentication"), exports);
+__exportStar(require("./RunnerInfo"), exports);
+__exportStar(require("./PagedResult"), exports);
+__exportStar(require("./ContextProvider"), exports);
+
+},{"./Authentication":50,"./ContextProvider":51,"./PagedResult":52,"./RunnerInfo":53}],55:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],56:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.FilterType = void 0;
+var FilterType;
+(function (FilterType) {
+    /**
+     * This Represents the filter as a toggle switch, the value returned in the directory request will be a `boolean`
+     */
+    FilterType[FilterType["TOGGLE"] = 0] = "TOGGLE";
+    /**
+     * This represents the filter as a picker, the value returned will be the `key` of the selected option as a `string`
+     */
+    FilterType[FilterType["SELECT"] = 1] = "SELECT";
+    /**
+     * This Represents the filter as a multi-picker, the value returned will the the keys of the selected options as an array of strings
+     */
+    FilterType[FilterType["MULTISELECT"] = 2] = "MULTISELECT";
+    /**
+     * This Represents the filter as a multi-picker,the value returned will be of type {@link ExcludableMultiSelectProp}
+     */
+    FilterType[FilterType["EXCLUDABLE_MULTISELECT"] = 3] = "EXCLUDABLE_MULTISELECT";
+    /**
+     * This will represent the filter as a textfield, the value returned will be a string
+     */
+    FilterType[FilterType["TEXT"] = 4] = "TEXT";
+    /**
+     * This is a basic filter that will only display the title or subtitle, it will not return any value in the populated `DirectoryRequest`
+     */
+    FilterType[FilterType["INFO"] = 5] = "INFO";
+})(FilterType || (exports.FilterType = FilterType = {}));
+
+},{}],57:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],58:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./DirectoryConfig"), exports);
+__exportStar(require("./DirectoryRequest"), exports);
+__exportStar(require("./DirectoryFilter"), exports);
+
+},{"./DirectoryConfig":55,"./DirectoryFilter":56,"./DirectoryRequest":57}],59:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Generate = void 0;
+__exportStar(require("./core"), exports);
+__exportStar(require("./content"), exports);
+__exportStar(require("./networking"), exports);
+__exportStar(require("./UI"), exports);
+__exportStar(require("./tracker"), exports);
+__exportStar(require("./directory"), exports);
+__exportStar(require("./page"), exports);
+const Generate = (v) => v;
+exports.Generate = Generate;
+
+},{"./UI":41,"./content":49,"./core":54,"./directory":58,"./networking":64,"./page":65,"./tracker":66}],60:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.NetworkClientBuilder = void 0;
+/**
+ * NetworkClientBuilder is a builder class used for creating and configuring instances of NetworkClient.
+ * The builder allows you to configure various aspects of the NetworkClient, such as rate limits,
+ * request/response transformers (interceptors), headers, cookies, timeout, status validator, and more.
+ */
+class NetworkClientBuilder {
+    constructor() {
+        // Array of functions that transform requests
+        this.requestTransformers = [];
+        // Array of functions that transform responses
+        this.responseTransformers = [];
+        // Object representing HTTP headers, where each key-value pair represents a header
+        this.headers = {};
+        // Array of cookies
+        this.cookies = [];
+    }
+    /**
+     * Sets the rate limit for the NetworkClient.
+     *
+     * @param requests - The maximum number of requests to make per interval.
+     * @param interval - The length of the rate limiting interval in seconds.
+     * @returns The builder, to allow for method chaining.
+     */
+    setRateLimit(requests, interval) {
+        this.requestsPerSecond = requests / interval;
+        return this;
+    }
+    /**
+     * Adds a request interceptor to the NetworkClient.
+     *
+     * @param transformer - The interceptor to add. This should be a function that takes a request and modifies it in some way.
+     * @returns The builder, to allow for method chaining.
+     */
+    addRequestInterceptor(transformer) {
+        this.requestTransformers.push(transformer);
+        return this;
+    }
+    /**
+     * Adds a response interceptor to the NetworkClient.
+     *
+     * @param transformer - The interceptor to add. This should be a function that takes a response and modifies it in some way.
+     * @returns The builder, to allow for method chaining.
+     */
+    addResponseInterceptor(transformer) {
+        this.responseTransformers.push(transformer);
+        return this;
+    }
+    /**
+     * Sets the authorization token for the NetworkClient.
+     *
+     * @param token - The token to be included in the Authorization header of every request.
+     * @returns The builder, to allow for method chaining.
+     */
+    setAuthorizationToken(token) {
+        return this.addHeader("Authorization", token);
+    }
+    /**
+     * Sets the status validator for the NetworkClient.
+     *
+     * @param validator - A function that takes a status code and returns true if it is considered successful.
+     * @returns The builder, to allow for method chaining.
+     */
+    setStatusValidator(validator) {
+        this.statusValidator = validator;
+        return this;
+    }
+    /**
+     * Sets the timeout for requests made by the NetworkClient.
+     *
+     * @param timeout - The maximum time to wait for a request to complete, in milliseconds.
+     * @returns The builder, to allow for method chaining.
+     */
+    setTimeout(timeout) {
+        this.timeout = timeout;
+        return this;
+    }
+    /**
+     * Sets the maximum number of retries for this request by the NetworkClient.
+     *
+     * @param retries - The maximum number of retries for this request
+     * @returns The builder, to allow for method chaining.
+     */
+    setMaxRetries(retries) {
+        this.maxRetries = retries;
+        return this;
+    }
+    /**
+     * Sets a header for the NetworkClient.
+     *
+     * @param key - The name of the header
+     * @param value - The value of the header
+     * @returns The builder, to allow for method chaining.
+     */
+    addHeader(key, value) {
+        this.headers[key] = value;
+        return this;
+    }
+    /**
+     * Sets a cookie for the NetworkClient.
+     *
+     * @param cookie - The cookie to be included in every request.
+     * @returns The builder, to allow for method chaining.
+     */
+    addCookie(cookie) {
+        this.cookies.push(cookie);
+        return this;
+    }
+    /**
+     * Builds a NetworkClient using the parameters set on the builder.
+     *
+     * @returns A NetworkClient with the configured parameters.
+     */
+    build() {
+        return new NetworkClient(this);
+    }
+}
+exports.NetworkClientBuilder = NetworkClientBuilder;
+
+},{}],61:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],62:[function(require,module,exports){
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.name = void 0;
+const name = (base, known) => __awaiter(void 0, void 0, void 0, function* () {
+    return Object.assign(Object.assign({}, base), known);
+});
+exports.name = name;
+
+},{}],63:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],64:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./Builder"), exports);
+__exportStar(require("./Client"), exports);
+__exportStar(require("./Request"), exports);
+__exportStar(require("./Response"), exports);
+
+},{"./Builder":60,"./Client":61,"./Request":62,"./Response":63}],65:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SectionStyle = void 0;
+var SectionStyle;
+(function (SectionStyle) {
+    SectionStyle[SectionStyle["DEFAULT"] = 0] = "DEFAULT";
+    SectionStyle[SectionStyle["INFO"] = 1] = "INFO";
+    SectionStyle[SectionStyle["GALLERY"] = 2] = "GALLERY";
+    SectionStyle[SectionStyle["NAVIGATION_LIST"] = 3] = "NAVIGATION_LIST";
+    SectionStyle[SectionStyle["ITEM_LIST"] = 4] = "ITEM_LIST";
+    SectionStyle[SectionStyle["PADDED_LIST"] = 5] = "PADDED_LIST";
+    SectionStyle[SectionStyle["TAG"] = 6] = "TAG";
+    SectionStyle[SectionStyle["STANDARD_GRID"] = 7] = "STANDARD_GRID";
+})(SectionStyle || (exports.SectionStyle = SectionStyle = {}));
+
+},{}],66:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TrackStatus = void 0;
+var TrackStatus;
+(function (TrackStatus) {
+    TrackStatus["READING"] = "READING";
+    TrackStatus["PLANNING"] = "PLANNING";
+    TrackStatus["COMPLETED"] = "COMPLETED";
+    TrackStatus["PAUSED"] = "PAUSED";
+    TrackStatus["DROPPED"] = "DROPPED";
+    TrackStatus["REREADING"] = "REREADING";
+})(TrackStatus || (exports.TrackStatus = TrackStatus = {}));
+
+},{}]},{},[8])(8)
+});

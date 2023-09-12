@@ -1,0 +1,3647 @@
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.STTPackage = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.healthCheck = exports.getHost = exports.getUser = void 0;
+const _1 = require(".");
+const store_1 = require("../store");
+const utils_1 = require("../utils");
+const getUser = async () => {
+    const user = await (0, _1.request)({ url: await (0, utils_1.genURL)("/api/v2/users/me") });
+    return user;
+};
+exports.getUser = getUser;
+const getHost = async () => {
+    let host = await store_1.KomgaStore.host();
+    if (!host)
+        throw new Error("You have not defined a server url!");
+    if (host.endsWith("/"))
+        return host.slice(0, -1);
+    return host;
+};
+exports.getHost = getHost;
+const healthCheck = async () => {
+    await (0, _1.simpleReq)({ url: await (0, utils_1.genURL)("/api/v1/oauth2/providers") });
+};
+exports.healthCheck = healthCheck;
+
+},{".":2,"../store":17,"../utils":20}],2:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./auth"), exports);
+__exportStar(require("./request"), exports);
+__exportStar(require("./library"), exports);
+
+},{"./auth":1,"./library":3,"./request":4}],3:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getBooks = exports.getSeries = exports.getBook = exports.getBooksForSeriesAsChapters = exports.getBooksForSeries = exports.getSeriesForLibrary = exports.getSeriesForLibraryWithState = exports.getBooksForLibrary = exports.getUserLibraries = void 0;
+const _1 = require(".");
+const auth_1 = require("./auth");
+const utils_1 = require("../utils");
+/**
+ * Returns all libraries created by the user.
+ */
+const getUserLibraries = async () => {
+    const data = await (0, _1.request)({
+        url: await (0, utils_1.genURL)("/api/v1/libraries"),
+    });
+    return data;
+};
+exports.getUserLibraries = getUserLibraries;
+/**
+ * Gets All Books within a library
+ */
+const getBooksForLibrary = async (library_id, sort, status) => {
+    const { content: data } = await (0, _1.request)({
+        url: await (0, utils_1.genURL)("/api/v1/books"),
+        params: {
+            sort,
+            read_status: status,
+            ...(library_id && { library_id }),
+        },
+    });
+    const host = await (0, auth_1.getHost)();
+    const highlights = (data ?? []).map((book) => (0, utils_1.bookToHighlight)(book, host));
+    return highlights;
+};
+exports.getBooksForLibrary = getBooksForLibrary;
+/**
+ * Gets all series within a library
+ */
+const getSeriesForLibraryWithState = async (library_id, state) => {
+    const body = {
+        url: await (0, utils_1.genURL)(`/api/v1/series/${state}`),
+        params: {
+            ...(library_id && { library_id }),
+        },
+    };
+    const { content: data } = await (0, _1.request)(body);
+    return data ?? [];
+};
+exports.getSeriesForLibraryWithState = getSeriesForLibraryWithState;
+const getSeriesForLibrary = async (library_id, sort, page, search) => {
+    const config = {
+        url: await (0, utils_1.genURL)(`/api/v1/series`),
+        params: {
+            library_id,
+            sort,
+            page: page - 1,
+            size: 30,
+            search,
+        },
+    };
+    const { content: data } = await (0, _1.request)(config);
+    return data ?? [];
+};
+exports.getSeriesForLibrary = getSeriesForLibrary;
+/**
+ * Get books within a series
+ */
+const getBooksForSeries = async (series, sort) => {
+    const { content: data, last } = await (0, _1.request)({
+        url: await (0, utils_1.genURL)(`/api/v1/series/${series}/books`),
+        params: {
+            page: 0,
+            size: utils_1.RESULT_COUNT,
+            sort,
+        },
+    });
+    const host = await (0, auth_1.getHost)();
+    const items = (data ?? []).map((book) => (0, utils_1.bookToHighlight)(book, host));
+    return {
+        isLastPage: last ?? true,
+        items,
+    };
+};
+exports.getBooksForSeries = getBooksForSeries;
+const getBooksForSeriesAsChapters = async (series) => {
+    const { content: data } = await (0, _1.request)({
+        url: await (0, utils_1.genURL)(`/api/v1/series/${series}/books`),
+        params: {
+            page: 0,
+            size: 9999,
+            sort: (0, utils_1.buildSort)(utils_1.SORTS.number, false),
+        },
+    });
+    const host = await (0, auth_1.getHost)();
+    const items = (data ?? []).map((book, idx) => (0, utils_1.bookToChapter)(book, host, idx));
+    return items;
+};
+exports.getBooksForSeriesAsChapters = getBooksForSeriesAsChapters;
+const getBook = async (id) => {
+    return (0, _1.request)({
+        url: await (0, utils_1.genURL)(`/api/v1/books/${id}`),
+    });
+};
+exports.getBook = getBook;
+const getSeries = async (id) => {
+    return (0, _1.request)({
+        url: await (0, utils_1.genURL)(`/api/v1/series/${id}`),
+    });
+};
+exports.getSeries = getSeries;
+const getBooks = async (series, size, sort = (0, utils_1.buildSort)(utils_1.DEFAULT_SORT, false)) => {
+    const { content: data } = await (0, _1.request)({
+        url: await (0, utils_1.genURL)(`/api/v1/series/${series}/books`),
+        params: {
+            page: 0,
+            size,
+            sort,
+        },
+    });
+    return data ?? [];
+};
+exports.getBooks = getBooks;
+
+},{".":2,"../utils":20,"./auth":1}],4:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.simpleReq = exports.request = void 0;
+const store_1 = require("../store");
+async function request(req) {
+    const host = await store_1.KomgaStore.host();
+    const credentials = await store_1.KomgaStore.credentials();
+    if (!host)
+        throw new Error("You have not defined a server url!");
+    if (!credentials)
+        throw new Error("You are not signed in!");
+    const client = new NetworkClient();
+    const { data } = await client.request({
+        ...req,
+        headers: {
+            ...req.headers,
+            Authorization: `Basic ${credentials}`,
+        },
+        transformResponse: async (res) => {
+            if (res.status === 401) {
+                // Signed Out
+                await ObjectStore.remove("authenticated");
+            }
+            return res;
+        },
+    });
+    if (!data)
+        return {};
+    const object = JSON.parse(data);
+    return object;
+}
+exports.request = request;
+const simpleReq = async (req) => {
+    const client = new NetworkClient();
+    const { data } = await client.request(req);
+    const object = JSON.parse(data);
+    return object;
+};
+exports.simpleReq = simpleReq;
+
+},{"../store":17}],5:[function(require,module,exports){
+(function (Buffer){(function (){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.KomgaAuthentication = void 0;
+const daisuke_1 = require("@suwatte/daisuke");
+const auth_1 = require("../api/auth");
+const store_1 = require("../store");
+const utils_1 = require("../utils");
+exports.KomgaAuthentication = {
+    BasicAuthUIIdentifier: daisuke_1.BasicAuthenticationUIIdentifier.USERNAME,
+    getAuthenticatedUser: async () => {
+        const host = await store_1.KomgaStore.host();
+        if (!host)
+            throw new Error("You have not set your server url. You must do this to use the runner");
+        const authenticated = await store_1.KomgaStore.authenticated();
+        if (!authenticated)
+            return null;
+        try {
+            const data = await (0, auth_1.getUser)();
+            return {
+                handle: data.email,
+            };
+        }
+        catch (err) {
+            console.error(err.message);
+            await SecureStore.remove("credentials");
+            await ObjectStore.remove("authenticated");
+        }
+        return null;
+    },
+    handleUserSignOut: async () => {
+        throw "Not ready";
+    },
+    handleBasicAuth: async (identifier, password) => {
+        const value = Buffer.from(`${identifier}:${password}`).toString("base64");
+        // Set Cookie
+        const client = new NetworkClient();
+        await client.request({
+            url: await (0, utils_1.genURL)("/api/v1/login/set-cookie"),
+            headers: {
+                Authorization: `Basic ${value}`,
+            },
+        });
+        // Try Fetching User to verify
+        try {
+            await client.request({
+                url: await (0, utils_1.genURL)("/api/v2/users/me"),
+            });
+            // Set Props
+            await ObjectStore.set("authenticated", true);
+            await SecureStore.set("credentials", value);
+        }
+        catch (err) {
+            throw err;
+        }
+    },
+};
+
+}).call(this)}).call(this,require("buffer").Buffer)
+},{"../api/auth":1,"../store":17,"../utils":20,"@suwatte/daisuke":21,"buffer":73}],6:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.KomgaBookEvent = void 0;
+const api_1 = require("../api");
+const utils_1 = require("../utils");
+exports.KomgaBookEvent = {
+    onChaptersMarked: async function (_, bookIds, completed) {
+        const promises = bookIds.map((v) => markAsRead(v, completed));
+        const state = await Promise.allSettled(promises);
+        const failing = state.filter((v) => v.status === "rejected").length;
+        if (failing) {
+            console.error(`Failed to mark ${failing} Books`);
+        }
+    },
+    onChapterRead: async function (_, bookId) {
+        return markAsRead(bookId);
+    },
+    async onPageRead(_, bookId, page) {
+        return (0, api_1.request)({
+            url: await (0, utils_1.genURL)(`/api/v1/books/${bookId}/read-progress`),
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: {
+                page,
+            },
+        });
+    },
+};
+const markAsRead = async (bookId, completed = true) => {
+    await (0, api_1.request)({
+        url: await (0, utils_1.genURL)(`/api/v1/books/${bookId}/read-progress`),
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: {
+            completed,
+        },
+    });
+};
+
+},{"../api":2,"../utils":20}],7:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.KomgaContentSource = void 0;
+const api_1 = require("../api");
+const utils_1 = require("../utils");
+exports.KomgaContentSource = {
+    getContent: async function (contentId) {
+        // * NOTE: `contentId` in our case will always refer to Series and not Books.
+        const series = await (0, api_1.getSeries)(contentId);
+        return (0, utils_1.seriesToContent)(series);
+    },
+    getChapters: async function (contentId) {
+        return (0, api_1.getBooksForSeriesAsChapters)(contentId);
+    },
+    getChapterData: async function (contentId, chapterId) {
+        const book = await (0, api_1.getBook)(chapterId);
+        const pageCount = book.media.pagesCount;
+        const host = await (0, api_1.getHost)();
+        const images = Array(pageCount)
+            .fill(0)
+            .map((_, idx) => ({
+            url: `${host}/api/v1/books/${chapterId}/pages/${idx + 1}`,
+        }));
+        return {
+            chapterId,
+            contentId,
+            pages: images,
+        };
+    },
+    getIdentifierForURL: async function (url) {
+        return null;
+    },
+};
+
+},{"../api":2,"../utils":20}],8:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.KomgaDirectoryHandler = void 0;
+const utils_1 = require("../utils");
+const api_1 = require("../api");
+const store_1 = require("../store");
+/**
+ * Implementation of the DirectoryHandler Methods
+ */
+exports.KomgaDirectoryHandler = {
+    getDirectory: function (request) {
+        return fetchDirectory(request);
+    },
+    getDirectoryConfig: async function (key) {
+        return buildDirectoryConfig(key === "library");
+    },
+};
+/**
+ * Builds the Directory View Sort Options & Filters
+ */
+function buildDirectoryConfig(searchable) {
+    return {
+        searchable,
+        sort: {
+            options: utils_1.SortOptions,
+            canChangeOrder: true,
+            default: {
+                key: utils_1.DEFAULT_SORT,
+                ascending: false,
+            },
+        },
+    };
+}
+async function fetchDirectory(request) {
+    const sort = request.sort
+        ? (0, utils_1.buildSort)(request.sort.key, request.sort.ascending)
+        : (0, utils_1.buildSort)();
+    const seriesId = request.context?.seriesId;
+    const libraryId = request.context?.libraryId;
+    if (seriesId) {
+        const result = await (0, api_1.getBooksForSeries)(seriesId, sort);
+        return {
+            results: result.items,
+            isLastPage: result.isLastPage,
+        };
+    }
+    else if (libraryId) {
+        const host = await (0, api_1.getHost)();
+        const asTitle = await store_1.KomgaStore.openSeriesAsTitle();
+        if (!host)
+            throw new Error("Host not defined");
+        const results = (await (0, api_1.getSeriesForLibrary)(libraryId, (0, utils_1.buildSort)(request.sort?.key, request.sort?.ascending), request.page, request.query)).map((v) => (0, utils_1.seriesToTile)(v, host, !(asTitle ?? false)));
+        return {
+            results,
+            isLastPage: results.length < 30,
+        };
+    }
+    throw new Error("unable to process request. Context provided is not defined.");
+}
+
+},{"../api":2,"../store":17,"../utils":20}],9:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.KomgaImageHandler = void 0;
+exports.KomgaImageHandler = {
+    willRequestImage: async function (url) {
+        return {
+            url,
+            headers: {
+                Accept: "image/*",
+            },
+        };
+    },
+};
+
+},{}],10:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./contentSource"), exports);
+__exportStar(require("./directoryHandler"), exports);
+__exportStar(require("./pageLinkProvider"), exports);
+__exportStar(require("./auth"), exports);
+__exportStar(require("./preference"), exports);
+__exportStar(require("./readerContextProvider"), exports);
+__exportStar(require("./imageHandler"), exports);
+__exportStar(require("./bookEvent"), exports);
+__exportStar(require("./setup"), exports);
+
+},{"./auth":5,"./bookEvent":6,"./contentSource":7,"./directoryHandler":8,"./imageHandler":9,"./pageLinkProvider":11,"./preference":13,"./readerContextProvider":14,"./setup":15}],11:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.KomgaPageProvider = void 0;
+const library_1 = require("../api/library");
+exports.KomgaPageProvider = {
+    async getLibraryPageLinks() {
+        const library = await (0, library_1.getUserLibraries)();
+        return library.map((lib) => ({
+            title: lib.name,
+            link: {
+                request: {
+                    page: 1,
+                    configKey: "library",
+                    context: {
+                        libraryId: lib.id,
+                    },
+                },
+            },
+        }));
+    },
+    async getBrowsePageLinks() {
+        const library = await (0, library_1.getUserLibraries)();
+        return [
+            {
+                title: "Home",
+                link: {
+                    page: {
+                        key: "all",
+                    },
+                },
+            },
+            ...library.map((lib) => ({
+                title: lib.name,
+                link: {
+                    page: {
+                        key: "library",
+                        context: {
+                            libraryId: lib.id,
+                        },
+                    },
+                },
+            })),
+        ];
+    },
+};
+
+},{"../api/library":3}],12:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.KomgaPageLinkResolver = void 0;
+const library_1 = require("../api/library");
+const utils_1 = require("../utils");
+const api_1 = require("../api");
+const store_1 = require("../store");
+exports.KomgaPageLinkResolver = {
+    getSectionsForPage: async function (link) {
+        switch (link.key) {
+            case "all":
+            case "library": {
+                return buildBrowseLibrarySections();
+            }
+        }
+        throw new Error(`No Handler Providing sections for ${link.key}`);
+    },
+    resolvePageSection: function (link, sectionKey) {
+        switch (link.key) {
+            case "all":
+            case "library": {
+                const libraryId = link.context?.libraryId ?? null;
+                return resolveLibrarySection(libraryId, sectionKey);
+            }
+        }
+        throw new Error(`No Handler Resolving ${link.key}`);
+    },
+};
+// Library Sections
+function buildBrowseLibrarySections() {
+    const sections = [];
+    sections.push({
+        key: "keep_reading",
+        title: "Keep Reading",
+    });
+    sections.push({
+        key: "recently_released",
+        title: "Recently Released",
+    });
+    sections.push({
+        key: "recently_added_books",
+        title: "Recently Added Books",
+    });
+    sections.push({
+        key: "recently_added_series",
+        title: "Recently Added Series",
+    });
+    sections.push({
+        key: "recently_updated_series",
+        title: "Recently Updated Series",
+    });
+    return sections;
+}
+// Library Sections
+async function resolveLibrarySection(libraryId, sectionKey) {
+    let items = [];
+    const convertSeriesToItems = async (key) => {
+        const openAsTitle = await store_1.KomgaStore.openSeriesAsTitle();
+        const series = await (0, library_1.getSeriesForLibraryWithState)(libraryId, key);
+        const host = await (0, api_1.getHost)();
+        const highlights = (series ?? []).map((data) => (0, utils_1.seriesToTile)(data, host, !openAsTitle));
+        return highlights;
+    };
+    switch (sectionKey) {
+        case "keep_reading": {
+            const highlights = await (0, library_1.getBooksForLibrary)(libraryId, (0, utils_1.buildSort)(utils_1.SORTS.readProgress, false), "IN_PROGRESS");
+            items = highlights.map((h) => ({ item: h }));
+            break;
+        }
+        case "recently_released": {
+            const highlights = await (0, library_1.getBooksForLibrary)(libraryId, (0, utils_1.buildSort)(utils_1.SORTS.releaseDate, false));
+            items = highlights.map((h) => ({ item: h }));
+            break;
+        }
+        case "recently_added_books": {
+            const highlights = await (0, library_1.getBooksForLibrary)(libraryId, (0, utils_1.buildSort)(utils_1.SORTS.creationDate, false));
+            items = highlights.map((h) => ({ item: h }));
+            break;
+        }
+        case "recently_added_series": {
+            items = (await convertSeriesToItems("new")).map((h) => ({ item: h }));
+            break;
+        }
+        case "recently_updated_series": {
+            items = (await convertSeriesToItems("updated")).map((h) => ({ item: h }));
+            break;
+        }
+    }
+    return { items };
+}
+
+},{"../api":2,"../api/library":3,"../store":17,"../utils":20}],13:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.KomgaPreferenceProvider = void 0;
+const daisuke_1 = require("@suwatte/daisuke");
+const store_1 = require("../store");
+exports.KomgaPreferenceProvider = {
+    getPreferenceMenu: async function () {
+        return {
+            sections: [
+                {
+                    header: "Core",
+                    children: [
+                        (0, daisuke_1.UIToggle)({
+                            key: "openAsTitle",
+                            label: "Open Series as Title",
+                            value: await store_1.KomgaStore.openSeriesAsTitle(),
+                            async didChange(value) {
+                                await ObjectStore.set("openAsTitle", value);
+                            },
+                        }),
+                    ],
+                },
+            ],
+        };
+    },
+};
+
+},{"../store":17,"@suwatte/daisuke":21}],14:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.KomgaMSB = void 0;
+const api_1 = require("../api");
+const utils_1 = require("../utils");
+exports.KomgaMSB = {
+    provideReaderContext: async function (contentId) {
+        const [_, bookId] = contentId.split(":");
+        return getContextForBook(bookId);
+    },
+};
+async function getContextForBook(bookId) {
+    const book = await (0, api_1.getBook)(bookId);
+    const host = await (0, api_1.getHost)();
+    // should return highlight pointing to the series rather than the book
+    // so the local progress entry all point to the same title
+    const content = {
+        contentId: book.seriesId,
+        title: book.seriesTitle,
+        cover: `${host}/api/v1/series/${book.seriesId}/thumbnail`,
+    };
+    const series = await (0, api_1.getSeries)(book.seriesId);
+    const books = await (0, api_1.getBooks)(series.id, series.booksCount);
+    const chapters = books.map((v, idx) => (0, utils_1.bookToChapter)(v, host, idx));
+    const page = book.readProgress?.page ?? 1;
+    return {
+        target: book.id,
+        content,
+        chapters,
+        requestedPageIndex: page - 1,
+        // Komga only supports 1 reading mode for all titles, do not set the reading mode
+    };
+}
+
+},{"../api":2,"../utils":20}],15:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.KomgaSetupProvider = void 0;
+const daisuke_1 = require("@suwatte/daisuke");
+const store_1 = require("../store");
+const api_1 = require("../api");
+exports.KomgaSetupProvider = {
+    getSetupMenu: async function () {
+        return {
+            sections: [
+                {
+                    header: "Server URL",
+                    children: [
+                        (0, daisuke_1.UITextField)({
+                            key: "host",
+                            label: "Server URL",
+                            value: (await store_1.KomgaStore.host()) ?? "",
+                        }),
+                    ],
+                },
+            ],
+        };
+    },
+    validateSetupForm: async function ({ host: value, }) {
+        if (!value.endsWith("/"))
+            value += "/";
+        await ObjectStore.set("host", value);
+        try {
+            await (0, api_1.healthCheck)();
+        }
+        catch (error) {
+            console.error(`${error}`);
+            throw new Error("Cannot Connect to Komga Server");
+        }
+    },
+};
+
+},{"../api":2,"../store":17,"@suwatte/daisuke":21}],16:[function(require,module,exports){
+"use strict";
+"stt webkit";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Target = void 0;
+const daisuke_1 = require("@suwatte/daisuke");
+const impl_1 = require("./impl");
+const pageLinkResolver_1 = require("./impl/pageLinkResolver");
+// Info
+const info = {
+    id: "org.komga",
+    name: "Komga",
+    version: 1.0,
+    minSupportedAppVersion: "6.0.0",
+    thumbnail: "komga.png",
+    website: "https://komga.org",
+    supportedLanguages: ["UNIVERSAL"],
+    rating: daisuke_1.CatalogRating.SAFE,
+};
+// Config
+const config = {
+    disableChapterDataCaching: true,
+    disableLibraryActions: true,
+    disableContentLinking: true,
+    disableCustomThumbnails: true,
+    disableLanguageFlags: true,
+    disableMigrationDestination: true,
+    disableTrackerLinking: true,
+    disableUpdateChecks: true,
+    allowsMultipleInstances: true,
+};
+exports.Target = {
+    info,
+    config,
+    ...impl_1.KomgaContentSource,
+    ...impl_1.KomgaDirectoryHandler,
+    ...impl_1.KomgaPageProvider,
+    ...pageLinkResolver_1.KomgaPageLinkResolver,
+    ...impl_1.KomgaAuthentication,
+    ...impl_1.KomgaPreferenceProvider,
+    ...impl_1.KomgaMSB,
+    ...impl_1.KomgaImageHandler,
+    ...impl_1.KomgaBookEvent,
+    ...impl_1.KomgaSetupProvider,
+};
+
+},{"./impl":10,"./impl/pageLinkResolver":12,"@suwatte/daisuke":21}],17:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.KomgaStore = void 0;
+exports.KomgaStore = {
+    host: () => ObjectStore.string("host"),
+    credentials: () => SecureStore.string("credentials"),
+    authenticated: () => ObjectStore.get("authenticated"),
+    openSeriesAsTitle: () => ObjectStore.boolean("openAsTitle"),
+};
+
+},{}],18:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DEFAULT_SORT = exports.RESULT_COUNT = exports.SortOptions = exports.SORTS = void 0;
+exports.SORTS = {
+    readProgress: "readProgress.readDate",
+    releaseDate: "metadata.releaseDate",
+    creationDate: "createdDate",
+    number: "metadata.numberSort",
+    name: "name",
+};
+exports.SortOptions = [
+    {
+        key: "metadata.numberSort",
+        label: "Issue Number",
+    },
+    {
+        key: "name",
+        label: "Name",
+    },
+    {
+        key: "readProgress.readDate",
+        label: "Reading Progress",
+    },
+    {
+        key: "metadata.releaseDate",
+        label: "Release Date",
+    },
+    {
+        key: "createdDate",
+        label: "Creation Date",
+    },
+];
+exports.RESULT_COUNT = 30;
+exports.DEFAULT_SORT = "metadata.numberSort";
+
+},{}],19:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.seriesToContent = exports.bookToChapter = exports.bookToHighlight = exports.seriesToTile = exports.genURL = exports.buildSort = void 0;
+const daisuke_1 = require("@suwatte/daisuke");
+const api_1 = require("../api");
+const constants_1 = require("./constants");
+/**
+ * builds the sort query param using the key and its order
+ */
+const buildSort = (key = constants_1.DEFAULT_SORT, asc = false) => `${key},${asc ? "asc" : "desc"}`;
+exports.buildSort = buildSort;
+/**
+ * Generates a url using the user specified host
+ */
+const genURL = async (url) => {
+    const val = `${await (0, api_1.getHost)()}${url}`;
+    return val;
+};
+exports.genURL = genURL;
+const seriesToTile = (series, host, asRequest) => {
+    const cover = `${host}/api/v1/series/${series.id}/thumbnail`;
+    const subtitle = `${series.booksCount} Book${series.booksCount != 1 ? "s" : ""}`;
+    return {
+        contentId: series.id,
+        title: series.metadata.title ?? series.name,
+        subtitle,
+        cover,
+        ...(asRequest && {
+            link: {
+                request: {
+                    configKey: "series",
+                    page: 1,
+                    context: {
+                        seriesId: series.id,
+                    },
+                },
+            },
+        }),
+    };
+};
+exports.seriesToTile = seriesToTile;
+const bookToHighlight = (book, host) => {
+    return {
+        contentId: `book:${book.id}`,
+        title: book.metadata.title,
+        subtitle: `${book.media.pagesCount} Pages • ${book.size}`,
+        cover: `${host}/api/v1/books/${book.id}/thumbnail`,
+        acquisitionLink: `${host}/api/v1/books/${book.id}/file`,
+        streamable: true,
+        // Blue Badge if book has not been started
+        ...(book.readProgress === null && {
+            badge: {
+                color: "#0096FF",
+            },
+        }),
+    };
+};
+exports.bookToHighlight = bookToHighlight;
+const bookToChapter = (book, host, index) => {
+    return {
+        contentId: book.seriesId,
+        chapterId: book.id,
+        title: book.metadata.title,
+        date: new Date(book.created),
+        number: book.metadata.numberSort,
+        index,
+        thumbnail: `${host}/api/v1/books/${book.id}/thumbnail`,
+        language: daisuke_1.DefinedLanguages.UNIVERSAL,
+    };
+};
+exports.bookToChapter = bookToChapter;
+const seriesToContent = async (series) => {
+    const host = await (0, api_1.getHost)();
+    const cover = `${host}/api/v1/series/${series.id}/thumbnail`;
+    const info = [];
+    if (series.booksCount == series.booksReadCount) {
+        info.push("Finished Reading");
+    }
+    else if (series.booksCount == series.booksUnreadCount) {
+        info.push("Not Started");
+    }
+    else if (series.booksUnreadCount != 0) {
+        info.push("Started Reading");
+    }
+    if (series.metadata.publisher) {
+        info.push(series.metadata.publisher);
+    }
+    if (series.metadata.genres.length != 0) {
+        info.push(...series.metadata.genres);
+    }
+    return {
+        contentId: series.id,
+        title: series.metadata.title ?? series.name,
+        cover,
+        status: convertStatus(series.metadata.status),
+        info,
+        summary: series.metadata.summary,
+    };
+};
+exports.seriesToContent = seriesToContent;
+const convertStatus = (val) => {
+    val = val.toLowerCase();
+    switch (val) {
+        case "ended": {
+            return daisuke_1.PublicationStatus.COMPLETED;
+        }
+        case "ongoing": {
+            return daisuke_1.PublicationStatus.ONGOING;
+        }
+        case "abandoned": {
+            return daisuke_1.PublicationStatus.CANCELLED;
+        }
+        case "hiatus": {
+            return daisuke_1.PublicationStatus.HIATUS;
+        }
+    }
+};
+
+},{"../api":2,"./constants":18,"@suwatte/daisuke":21}],20:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./constants"), exports);
+__exportStar(require("./helpers"), exports);
+
+},{"./constants":18,"./helpers":19}],21:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./runners"), exports);
+__exportStar(require("./types"), exports);
+
+},{"./runners":41,"./types":64}],22:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+
+},{}],23:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],24:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],25:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],26:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],27:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],28:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./ContentEvent"), exports);
+__exportStar(require("./ContentSync"), exports);
+__exportStar(require("./ChapterEvent"), exports);
+__exportStar(require("./StreamContextProvider"), exports);
+__exportStar(require("./ContextMenuHandler"), exports);
+
+},{"./ChapterEvent":23,"./ContentEvent":24,"./ContentSync":25,"./ContextMenuHandler":26,"./StreamContextProvider":27}],29:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./handlers"), exports);
+__exportStar(require("./ContentSource"), exports);
+
+},{"./ContentSource":22,"./handlers":28}],30:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],31:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],32:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./ContentTracker"), exports);
+__exportStar(require("./AdvancedTracker"), exports);
+
+},{"./AdvancedTracker":30,"./ContentTracker":31}],33:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.BasicAuthenticationUIIdentifier = void 0;
+var BasicAuthenticationUIIdentifier;
+(function (BasicAuthenticationUIIdentifier) {
+    BasicAuthenticationUIIdentifier[BasicAuthenticationUIIdentifier["EMAIL"] = 0] = "EMAIL";
+    BasicAuthenticationUIIdentifier[BasicAuthenticationUIIdentifier["USERNAME"] = 1] = "USERNAME";
+})(BasicAuthenticationUIIdentifier || (exports.BasicAuthenticationUIIdentifier = BasicAuthenticationUIIdentifier = {}));
+
+},{}],34:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],35:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],36:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],37:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],38:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],39:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./Authentication"), exports);
+__exportStar(require("./Preferences"), exports);
+__exportStar(require("./ImageRequest"), exports);
+__exportStar(require("./DirectoryHandler"), exports);
+__exportStar(require("./PageProvider"), exports);
+__exportStar(require("./RequiresSetup"), exports);
+
+},{"./Authentication":33,"./DirectoryHandler":34,"./ImageRequest":35,"./PageProvider":36,"./Preferences":37,"./RequiresSetup":38}],40:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.RunnerEnvironment = void 0;
+__exportStar(require("./extensions"), exports);
+var RunnerEnvironment;
+(function (RunnerEnvironment) {
+    RunnerEnvironment[RunnerEnvironment["SOURCE"] = 0] = "SOURCE";
+    RunnerEnvironment[RunnerEnvironment["TRACKER"] = 1] = "TRACKER";
+})(RunnerEnvironment || (exports.RunnerEnvironment = RunnerEnvironment = {}));
+
+},{"./extensions":39}],41:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./ContentSource"), exports);
+__exportStar(require("./Runner"), exports);
+__exportStar(require("./ContentTracker"), exports);
+
+},{"./ContentSource":29,"./ContentTracker":32,"./Runner":40}],42:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],43:[function(require,module,exports){
+"use strict";
+// Picker
+Object.defineProperty(exports, "__esModule", { value: true });
+
+},{}],44:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UIStepper = exports.UIButton = exports.UIDatePicker = exports.UITextField = exports.UIToggle = exports.UIMultiPicker = exports.UIPicker = void 0;
+const UIElements_1 = require("./UIElements");
+const UIPicker = (props) => (Object.assign(Object.assign({}, props), { type: UIElements_1.UIComponentType.SELECT }));
+exports.UIPicker = UIPicker;
+const UIMultiPicker = (props) => (Object.assign(Object.assign({}, props), { type: UIElements_1.UIComponentType.MULTISELECT }));
+exports.UIMultiPicker = UIMultiPicker;
+const UIToggle = (props) => (Object.assign(Object.assign({}, props), { type: UIElements_1.UIComponentType.TOGGLE }));
+exports.UIToggle = UIToggle;
+const UITextField = (props) => (Object.assign(Object.assign({}, props), { type: UIElements_1.UIComponentType.TEXTFIELD }));
+exports.UITextField = UITextField;
+const UIDatePicker = (props) => (Object.assign(Object.assign({}, props), { type: UIElements_1.UIComponentType.DATEPICKER }));
+exports.UIDatePicker = UIDatePicker;
+const UIButton = (props) => (Object.assign(Object.assign({}, props), { type: UIElements_1.UIComponentType.BUTTON }));
+exports.UIButton = UIButton;
+const UIStepper = (props) => (Object.assign(Object.assign({}, props), { type: UIElements_1.UIComponentType.STEPPER }));
+exports.UIStepper = UIStepper;
+
+},{"./UIElements":45}],45:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UIComponentType = void 0;
+var UIComponentType;
+(function (UIComponentType) {
+    UIComponentType[UIComponentType["SELECT"] = 0] = "SELECT";
+    UIComponentType[UIComponentType["MULTISELECT"] = 1] = "MULTISELECT";
+    UIComponentType[UIComponentType["STEPPER"] = 2] = "STEPPER";
+    UIComponentType[UIComponentType["TOGGLE"] = 3] = "TOGGLE";
+    UIComponentType[UIComponentType["TEXTFIELD"] = 4] = "TEXTFIELD";
+    UIComponentType[UIComponentType["BUTTON"] = 5] = "BUTTON";
+    UIComponentType[UIComponentType["DATEPICKER"] = 6] = "DATEPICKER";
+})(UIComponentType || (exports.UIComponentType = UIComponentType = {}));
+
+},{}],46:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./Form"), exports);
+__exportStar(require("./UIElements"), exports);
+__exportStar(require("./UIDefinitions"), exports);
+__exportStar(require("./UIElementBuilders"), exports);
+
+},{"./Form":42,"./UIDefinitions":43,"./UIElementBuilders":44,"./UIElements":45}],47:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DefinedLanguages = void 0;
+var DefinedLanguages;
+(function (DefinedLanguages) {
+    DefinedLanguages["UNIVERSAL"] = "UNIVERSAL";
+    DefinedLanguages["ENGLISH"] = "en_US";
+    DefinedLanguages["KOREAN"] = "ko_KR";
+    DefinedLanguages["JAPANESE"] = "ja_JP";
+    DefinedLanguages["FRENCH"] = "fr_FR";
+    DefinedLanguages["CHINESE"] = "zh-CN";
+    DefinedLanguages["SPANISH"] = "es_ES";
+    DefinedLanguages["PORTUGUESE"] = "pt_BR";
+})(DefinedLanguages || (exports.DefinedLanguages = DefinedLanguages = {}));
+
+},{}],48:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],49:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],50:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ContentType = exports.ReadingFlag = exports.ReadingMode = exports.PublicationStatus = void 0;
+// Enums
+var PublicationStatus;
+(function (PublicationStatus) {
+    PublicationStatus[PublicationStatus["UNKNOWN"] = 0] = "UNKNOWN";
+    PublicationStatus[PublicationStatus["ONGOING"] = 1] = "ONGOING";
+    PublicationStatus[PublicationStatus["COMPLETED"] = 2] = "COMPLETED";
+    PublicationStatus[PublicationStatus["CANCELLED"] = 3] = "CANCELLED";
+    PublicationStatus[PublicationStatus["HIATUS"] = 4] = "HIATUS";
+})(PublicationStatus || (exports.PublicationStatus = PublicationStatus = {}));
+/**
+ * The method in which the content can be read
+ */
+var ReadingMode;
+(function (ReadingMode) {
+    ReadingMode[ReadingMode["PAGED_MANGA"] = 0] = "PAGED_MANGA";
+    ReadingMode[ReadingMode["PAGED_COMIC"] = 1] = "PAGED_COMIC";
+    ReadingMode[ReadingMode["PAGED_VERTICAL"] = 2] = "PAGED_VERTICAL";
+    ReadingMode[ReadingMode["WEBTOON"] = 3] = "WEBTOON";
+    ReadingMode[ReadingMode["WEB"] = 4] = "WEB";
+})(ReadingMode || (exports.ReadingMode = ReadingMode = {}));
+var ReadingFlag;
+(function (ReadingFlag) {
+    ReadingFlag[ReadingFlag["READING"] = 0] = "READING";
+    ReadingFlag[ReadingFlag["PLANNED"] = 1] = "PLANNED";
+    ReadingFlag[ReadingFlag["COMPLETED"] = 2] = "COMPLETED";
+    ReadingFlag[ReadingFlag["DROPPED"] = 3] = "DROPPED";
+    ReadingFlag[ReadingFlag["REREADING"] = 4] = "REREADING";
+    ReadingFlag[ReadingFlag["PAUSED"] = 5] = "PAUSED";
+    ReadingFlag[ReadingFlag["UNKNOWN"] = 6] = "UNKNOWN";
+})(ReadingFlag || (exports.ReadingFlag = ReadingFlag = {}));
+var ContentType;
+(function (ContentType) {
+    ContentType[ContentType["MANGA"] = 0] = "MANGA";
+    ContentType[ContentType["MANHUA"] = 1] = "MANHUA";
+    ContentType[ContentType["MANHWA"] = 2] = "MANHWA";
+    ContentType[ContentType["COMIC"] = 3] = "COMIC";
+    ContentType[ContentType["NOVEL"] = 4] = "NOVEL";
+})(ContentType || (exports.ContentType = ContentType = {}));
+
+},{}],51:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],52:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],53:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ProviderLinkType = void 0;
+var ProviderLinkType;
+(function (ProviderLinkType) {
+    ProviderLinkType[ProviderLinkType["WEBSITE"] = 0] = "WEBSITE";
+    ProviderLinkType[ProviderLinkType["TWITTER"] = 1] = "TWITTER";
+    ProviderLinkType[ProviderLinkType["DISCORD"] = 2] = "DISCORD";
+    ProviderLinkType[ProviderLinkType["PATREON"] = 3] = "PATREON";
+})(ProviderLinkType || (exports.ProviderLinkType = ProviderLinkType = {}));
+
+},{}],54:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./Content"), exports);
+__exportStar(require("./Highlight"), exports);
+__exportStar(require("./Chapter"), exports);
+__exportStar(require("./ChapterData"), exports);
+__exportStar(require("./Property"), exports);
+__exportStar(require("./Collection"), exports);
+__exportStar(require("./Provider"), exports);
+
+},{"./Chapter":47,"./ChapterData":48,"./Collection":49,"./Content":50,"./Highlight":51,"./Property":52,"./Provider":53}],55:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AuthMethod = void 0;
+var AuthMethod;
+(function (AuthMethod) {
+    AuthMethod[AuthMethod["USERNAME_PW"] = 0] = "USERNAME_PW";
+    AuthMethod[AuthMethod["EMAIL_PW"] = 1] = "EMAIL_PW";
+    AuthMethod[AuthMethod["WEB"] = 2] = "WEB";
+    AuthMethod[AuthMethod["OAUTH"] = 3] = "OAUTH";
+})(AuthMethod || (exports.AuthMethod = AuthMethod = {}));
+
+},{}],56:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],57:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],58:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CatalogRating = void 0;
+var CatalogRating;
+(function (CatalogRating) {
+    /**
+     * Catalog does not contain ANY SUGGESTIVE OR NSFW content
+     */
+    CatalogRating[CatalogRating["SAFE"] = 0] = "SAFE";
+    /**
+     * Catalog may contain SUGGESTIVE OR NSFW content,
+     * runners must hide NSFW content by default,
+     * users will be required to verify they are of age to view NSFW content
+     */
+    CatalogRating[CatalogRating["MIXED"] = 1] = "MIXED";
+    /**
+     * Catalog contains MAINLY SUGGESTIVE OR NSFW content,
+     * users will be required to verify they are of age to view NSFW content
+     */
+    CatalogRating[CatalogRating["NSFW"] = 2] = "NSFW";
+})(CatalogRating || (exports.CatalogRating = CatalogRating = {}));
+
+},{}],59:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./Authentication"), exports);
+__exportStar(require("./RunnerInfo"), exports);
+__exportStar(require("./PagedResult"), exports);
+__exportStar(require("./ContextProvider"), exports);
+
+},{"./Authentication":55,"./ContextProvider":56,"./PagedResult":57,"./RunnerInfo":58}],60:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],61:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.FilterType = void 0;
+var FilterType;
+(function (FilterType) {
+    /**
+     * This Represents the filter as a toggle switch, the value returned in the directory request will be a `boolean`
+     */
+    FilterType[FilterType["TOGGLE"] = 0] = "TOGGLE";
+    /**
+     * This represents the filter as a picker, the value returned will be the `key` of the selected option as a `string`
+     */
+    FilterType[FilterType["SELECT"] = 1] = "SELECT";
+    /**
+     * This Represents the filter as a multi-picker, the value returned will the the keys of the selected options as an array of strings
+     */
+    FilterType[FilterType["MULTISELECT"] = 2] = "MULTISELECT";
+    /**
+     * This Represents the filter as a multi-picker,the value returned will be of type {@link ExcludableMultiSelectProp}
+     */
+    FilterType[FilterType["EXCLUDABLE_MULTISELECT"] = 3] = "EXCLUDABLE_MULTISELECT";
+    /**
+     * This will represent the filter as a textfield, the value returned will be a string
+     */
+    FilterType[FilterType["TEXT"] = 4] = "TEXT";
+    /**
+     * This is a basic filter that will only display the title or subtitle, it will not return any value in the populated `DirectoryRequest`
+     */
+    FilterType[FilterType["INFO"] = 5] = "INFO";
+})(FilterType || (exports.FilterType = FilterType = {}));
+
+},{}],62:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],63:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./DirectoryConfig"), exports);
+__exportStar(require("./DirectoryRequest"), exports);
+__exportStar(require("./DirectoryFilter"), exports);
+
+},{"./DirectoryConfig":60,"./DirectoryFilter":61,"./DirectoryRequest":62}],64:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Generate = void 0;
+__exportStar(require("./core"), exports);
+__exportStar(require("./content"), exports);
+__exportStar(require("./networking"), exports);
+__exportStar(require("./UI"), exports);
+__exportStar(require("./tracker"), exports);
+__exportStar(require("./directory"), exports);
+__exportStar(require("./page"), exports);
+const Generate = (v) => v;
+exports.Generate = Generate;
+
+},{"./UI":46,"./content":54,"./core":59,"./directory":63,"./networking":69,"./page":70,"./tracker":71}],65:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.NetworkClientBuilder = void 0;
+/**
+ * NetworkClientBuilder is a builder class used for creating and configuring instances of NetworkClient.
+ * The builder allows you to configure various aspects of the NetworkClient, such as rate limits,
+ * request/response transformers (interceptors), headers, cookies, timeout, status validator, and more.
+ */
+class NetworkClientBuilder {
+    constructor() {
+        // Array of functions that transform requests
+        this.requestTransformers = [];
+        // Array of functions that transform responses
+        this.responseTransformers = [];
+        // Object representing HTTP headers, where each key-value pair represents a header
+        this.headers = {};
+        // Array of cookies
+        this.cookies = [];
+    }
+    /**
+     * Sets the rate limit for the NetworkClient.
+     *
+     * @param requests - The maximum number of requests to make per interval.
+     * @param interval - The length of the rate limiting interval in seconds.
+     * @returns The builder, to allow for method chaining.
+     */
+    setRateLimit(requests, interval) {
+        this.requestsPerSecond = requests / interval;
+        return this;
+    }
+    /**
+     * Adds a request interceptor to the NetworkClient.
+     *
+     * @param transformer - The interceptor to add. This should be a function that takes a request and modifies it in some way.
+     * @returns The builder, to allow for method chaining.
+     */
+    addRequestInterceptor(transformer) {
+        this.requestTransformers.push(transformer);
+        return this;
+    }
+    /**
+     * Adds a response interceptor to the NetworkClient.
+     *
+     * @param transformer - The interceptor to add. This should be a function that takes a response and modifies it in some way.
+     * @returns The builder, to allow for method chaining.
+     */
+    addResponseInterceptor(transformer) {
+        this.responseTransformers.push(transformer);
+        return this;
+    }
+    /**
+     * Sets the authorization token for the NetworkClient.
+     *
+     * @param token - The token to be included in the Authorization header of every request.
+     * @returns The builder, to allow for method chaining.
+     */
+    setAuthorizationToken(token) {
+        return this.addHeader("Authorization", token);
+    }
+    /**
+     * Sets the status validator for the NetworkClient.
+     *
+     * @param validator - A function that takes a status code and returns true if it is considered successful.
+     * @returns The builder, to allow for method chaining.
+     */
+    setStatusValidator(validator) {
+        this.statusValidator = validator;
+        return this;
+    }
+    /**
+     * Sets the timeout for requests made by the NetworkClient.
+     *
+     * @param timeout - The maximum time to wait for a request to complete, in milliseconds.
+     * @returns The builder, to allow for method chaining.
+     */
+    setTimeout(timeout) {
+        this.timeout = timeout;
+        return this;
+    }
+    /**
+     * Sets the maximum number of retries for this request by the NetworkClient.
+     *
+     * @param retries - The maximum number of retries for this request
+     * @returns The builder, to allow for method chaining.
+     */
+    setMaxRetries(retries) {
+        this.maxRetries = retries;
+        return this;
+    }
+    /**
+     * Sets a header for the NetworkClient.
+     *
+     * @param key - The name of the header
+     * @param value - The value of the header
+     * @returns The builder, to allow for method chaining.
+     */
+    addHeader(key, value) {
+        this.headers[key] = value;
+        return this;
+    }
+    /**
+     * Sets a cookie for the NetworkClient.
+     *
+     * @param cookie - The cookie to be included in every request.
+     * @returns The builder, to allow for method chaining.
+     */
+    addCookie(cookie) {
+        this.cookies.push(cookie);
+        return this;
+    }
+    /**
+     * Builds a NetworkClient using the parameters set on the builder.
+     *
+     * @returns A NetworkClient with the configured parameters.
+     */
+    build() {
+        return new NetworkClient(this);
+    }
+}
+exports.NetworkClientBuilder = NetworkClientBuilder;
+
+},{}],66:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],67:[function(require,module,exports){
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.name = void 0;
+const name = (base, known) => __awaiter(void 0, void 0, void 0, function* () {
+    return Object.assign(Object.assign({}, base), known);
+});
+exports.name = name;
+
+},{}],68:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],69:[function(require,module,exports){
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+__exportStar(require("./Builder"), exports);
+__exportStar(require("./Client"), exports);
+__exportStar(require("./Request"), exports);
+__exportStar(require("./Response"), exports);
+
+},{"./Builder":65,"./Client":66,"./Request":67,"./Response":68}],70:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SectionStyle = void 0;
+var SectionStyle;
+(function (SectionStyle) {
+    SectionStyle[SectionStyle["DEFAULT"] = 0] = "DEFAULT";
+    SectionStyle[SectionStyle["INFO"] = 1] = "INFO";
+    SectionStyle[SectionStyle["GALLERY"] = 2] = "GALLERY";
+    SectionStyle[SectionStyle["NAVIGATION_LIST"] = 3] = "NAVIGATION_LIST";
+    SectionStyle[SectionStyle["ITEM_LIST"] = 4] = "ITEM_LIST";
+    SectionStyle[SectionStyle["PADDED_LIST"] = 5] = "PADDED_LIST";
+    SectionStyle[SectionStyle["TAG"] = 6] = "TAG";
+    SectionStyle[SectionStyle["STANDARD_GRID"] = 7] = "STANDARD_GRID";
+})(SectionStyle || (exports.SectionStyle = SectionStyle = {}));
+
+},{}],71:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TrackStatus = void 0;
+var TrackStatus;
+(function (TrackStatus) {
+    TrackStatus["READING"] = "READING";
+    TrackStatus["PLANNING"] = "PLANNING";
+    TrackStatus["COMPLETED"] = "COMPLETED";
+    TrackStatus["PAUSED"] = "PAUSED";
+    TrackStatus["DROPPED"] = "DROPPED";
+    TrackStatus["REREADING"] = "REREADING";
+})(TrackStatus || (exports.TrackStatus = TrackStatus = {}));
+
+},{}],72:[function(require,module,exports){
+'use strict'
+
+exports.byteLength = byteLength
+exports.toByteArray = toByteArray
+exports.fromByteArray = fromByteArray
+
+var lookup = []
+var revLookup = []
+var Arr = typeof Uint8Array !== 'undefined' ? Uint8Array : Array
+
+var code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+for (var i = 0, len = code.length; i < len; ++i) {
+  lookup[i] = code[i]
+  revLookup[code.charCodeAt(i)] = i
+}
+
+// Support decoding URL-safe base64 strings, as Node.js does.
+// See: https://en.wikipedia.org/wiki/Base64#URL_applications
+revLookup['-'.charCodeAt(0)] = 62
+revLookup['_'.charCodeAt(0)] = 63
+
+function getLens (b64) {
+  var len = b64.length
+
+  if (len % 4 > 0) {
+    throw new Error('Invalid string. Length must be a multiple of 4')
+  }
+
+  // Trim off extra bytes after placeholder bytes are found
+  // See: https://github.com/beatgammit/base64-js/issues/42
+  var validLen = b64.indexOf('=')
+  if (validLen === -1) validLen = len
+
+  var placeHoldersLen = validLen === len
+    ? 0
+    : 4 - (validLen % 4)
+
+  return [validLen, placeHoldersLen]
+}
+
+// base64 is 4/3 + up to two characters of the original data
+function byteLength (b64) {
+  var lens = getLens(b64)
+  var validLen = lens[0]
+  var placeHoldersLen = lens[1]
+  return ((validLen + placeHoldersLen) * 3 / 4) - placeHoldersLen
+}
+
+function _byteLength (b64, validLen, placeHoldersLen) {
+  return ((validLen + placeHoldersLen) * 3 / 4) - placeHoldersLen
+}
+
+function toByteArray (b64) {
+  var tmp
+  var lens = getLens(b64)
+  var validLen = lens[0]
+  var placeHoldersLen = lens[1]
+
+  var arr = new Arr(_byteLength(b64, validLen, placeHoldersLen))
+
+  var curByte = 0
+
+  // if there are placeholders, only get up to the last complete 4 chars
+  var len = placeHoldersLen > 0
+    ? validLen - 4
+    : validLen
+
+  var i
+  for (i = 0; i < len; i += 4) {
+    tmp =
+      (revLookup[b64.charCodeAt(i)] << 18) |
+      (revLookup[b64.charCodeAt(i + 1)] << 12) |
+      (revLookup[b64.charCodeAt(i + 2)] << 6) |
+      revLookup[b64.charCodeAt(i + 3)]
+    arr[curByte++] = (tmp >> 16) & 0xFF
+    arr[curByte++] = (tmp >> 8) & 0xFF
+    arr[curByte++] = tmp & 0xFF
+  }
+
+  if (placeHoldersLen === 2) {
+    tmp =
+      (revLookup[b64.charCodeAt(i)] << 2) |
+      (revLookup[b64.charCodeAt(i + 1)] >> 4)
+    arr[curByte++] = tmp & 0xFF
+  }
+
+  if (placeHoldersLen === 1) {
+    tmp =
+      (revLookup[b64.charCodeAt(i)] << 10) |
+      (revLookup[b64.charCodeAt(i + 1)] << 4) |
+      (revLookup[b64.charCodeAt(i + 2)] >> 2)
+    arr[curByte++] = (tmp >> 8) & 0xFF
+    arr[curByte++] = tmp & 0xFF
+  }
+
+  return arr
+}
+
+function tripletToBase64 (num) {
+  return lookup[num >> 18 & 0x3F] +
+    lookup[num >> 12 & 0x3F] +
+    lookup[num >> 6 & 0x3F] +
+    lookup[num & 0x3F]
+}
+
+function encodeChunk (uint8, start, end) {
+  var tmp
+  var output = []
+  for (var i = start; i < end; i += 3) {
+    tmp =
+      ((uint8[i] << 16) & 0xFF0000) +
+      ((uint8[i + 1] << 8) & 0xFF00) +
+      (uint8[i + 2] & 0xFF)
+    output.push(tripletToBase64(tmp))
+  }
+  return output.join('')
+}
+
+function fromByteArray (uint8) {
+  var tmp
+  var len = uint8.length
+  var extraBytes = len % 3 // if we have 1 byte left, pad 2 bytes
+  var parts = []
+  var maxChunkLength = 16383 // must be multiple of 3
+
+  // go through the array every three bytes, we'll deal with trailing stuff later
+  for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
+    parts.push(encodeChunk(uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)))
+  }
+
+  // pad the end with zeros, but make sure to not forget the extra bytes
+  if (extraBytes === 1) {
+    tmp = uint8[len - 1]
+    parts.push(
+      lookup[tmp >> 2] +
+      lookup[(tmp << 4) & 0x3F] +
+      '=='
+    )
+  } else if (extraBytes === 2) {
+    tmp = (uint8[len - 2] << 8) + uint8[len - 1]
+    parts.push(
+      lookup[tmp >> 10] +
+      lookup[(tmp >> 4) & 0x3F] +
+      lookup[(tmp << 2) & 0x3F] +
+      '='
+    )
+  }
+
+  return parts.join('')
+}
+
+},{}],73:[function(require,module,exports){
+(function (Buffer){(function (){
+/*!
+ * The buffer module from node.js, for the browser.
+ *
+ * @author   Feross Aboukhadijeh <https://feross.org>
+ * @license  MIT
+ */
+/* eslint-disable no-proto */
+
+'use strict'
+
+var base64 = require('base64-js')
+var ieee754 = require('ieee754')
+
+exports.Buffer = Buffer
+exports.SlowBuffer = SlowBuffer
+exports.INSPECT_MAX_BYTES = 50
+
+var K_MAX_LENGTH = 0x7fffffff
+exports.kMaxLength = K_MAX_LENGTH
+
+/**
+ * If `Buffer.TYPED_ARRAY_SUPPORT`:
+ *   === true    Use Uint8Array implementation (fastest)
+ *   === false   Print warning and recommend using `buffer` v4.x which has an Object
+ *               implementation (most compatible, even IE6)
+ *
+ * Browsers that support typed arrays are IE 10+, Firefox 4+, Chrome 7+, Safari 5.1+,
+ * Opera 11.6+, iOS 4.2+.
+ *
+ * We report that the browser does not support typed arrays if the are not subclassable
+ * using __proto__. Firefox 4-29 lacks support for adding new properties to `Uint8Array`
+ * (See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438). IE 10 lacks support
+ * for __proto__ and has a buggy typed array implementation.
+ */
+Buffer.TYPED_ARRAY_SUPPORT = typedArraySupport()
+
+if (!Buffer.TYPED_ARRAY_SUPPORT && typeof console !== 'undefined' &&
+    typeof console.error === 'function') {
+  console.error(
+    'This browser lacks typed array (Uint8Array) support which is required by ' +
+    '`buffer` v5.x. Use `buffer` v4.x if you require old browser support.'
+  )
+}
+
+function typedArraySupport () {
+  // Can typed array instances can be augmented?
+  try {
+    var arr = new Uint8Array(1)
+    arr.__proto__ = { __proto__: Uint8Array.prototype, foo: function () { return 42 } }
+    return arr.foo() === 42
+  } catch (e) {
+    return false
+  }
+}
+
+Object.defineProperty(Buffer.prototype, 'parent', {
+  enumerable: true,
+  get: function () {
+    if (!Buffer.isBuffer(this)) return undefined
+    return this.buffer
+  }
+})
+
+Object.defineProperty(Buffer.prototype, 'offset', {
+  enumerable: true,
+  get: function () {
+    if (!Buffer.isBuffer(this)) return undefined
+    return this.byteOffset
+  }
+})
+
+function createBuffer (length) {
+  if (length > K_MAX_LENGTH) {
+    throw new RangeError('The value "' + length + '" is invalid for option "size"')
+  }
+  // Return an augmented `Uint8Array` instance
+  var buf = new Uint8Array(length)
+  buf.__proto__ = Buffer.prototype
+  return buf
+}
+
+/**
+ * The Buffer constructor returns instances of `Uint8Array` that have their
+ * prototype changed to `Buffer.prototype`. Furthermore, `Buffer` is a subclass of
+ * `Uint8Array`, so the returned instances will have all the node `Buffer` methods
+ * and the `Uint8Array` methods. Square bracket notation works as expected -- it
+ * returns a single octet.
+ *
+ * The `Uint8Array` prototype remains unmodified.
+ */
+
+function Buffer (arg, encodingOrOffset, length) {
+  // Common case.
+  if (typeof arg === 'number') {
+    if (typeof encodingOrOffset === 'string') {
+      throw new TypeError(
+        'The "string" argument must be of type string. Received type number'
+      )
+    }
+    return allocUnsafe(arg)
+  }
+  return from(arg, encodingOrOffset, length)
+}
+
+// Fix subarray() in ES2016. See: https://github.com/feross/buffer/pull/97
+if (typeof Symbol !== 'undefined' && Symbol.species != null &&
+    Buffer[Symbol.species] === Buffer) {
+  Object.defineProperty(Buffer, Symbol.species, {
+    value: null,
+    configurable: true,
+    enumerable: false,
+    writable: false
+  })
+}
+
+Buffer.poolSize = 8192 // not used by this implementation
+
+function from (value, encodingOrOffset, length) {
+  if (typeof value === 'string') {
+    return fromString(value, encodingOrOffset)
+  }
+
+  if (ArrayBuffer.isView(value)) {
+    return fromArrayLike(value)
+  }
+
+  if (value == null) {
+    throw TypeError(
+      'The first argument must be one of type string, Buffer, ArrayBuffer, Array, ' +
+      'or Array-like Object. Received type ' + (typeof value)
+    )
+  }
+
+  if (isInstance(value, ArrayBuffer) ||
+      (value && isInstance(value.buffer, ArrayBuffer))) {
+    return fromArrayBuffer(value, encodingOrOffset, length)
+  }
+
+  if (typeof value === 'number') {
+    throw new TypeError(
+      'The "value" argument must not be of type number. Received type number'
+    )
+  }
+
+  var valueOf = value.valueOf && value.valueOf()
+  if (valueOf != null && valueOf !== value) {
+    return Buffer.from(valueOf, encodingOrOffset, length)
+  }
+
+  var b = fromObject(value)
+  if (b) return b
+
+  if (typeof Symbol !== 'undefined' && Symbol.toPrimitive != null &&
+      typeof value[Symbol.toPrimitive] === 'function') {
+    return Buffer.from(
+      value[Symbol.toPrimitive]('string'), encodingOrOffset, length
+    )
+  }
+
+  throw new TypeError(
+    'The first argument must be one of type string, Buffer, ArrayBuffer, Array, ' +
+    'or Array-like Object. Received type ' + (typeof value)
+  )
+}
+
+/**
+ * Functionally equivalent to Buffer(arg, encoding) but throws a TypeError
+ * if value is a number.
+ * Buffer.from(str[, encoding])
+ * Buffer.from(array)
+ * Buffer.from(buffer)
+ * Buffer.from(arrayBuffer[, byteOffset[, length]])
+ **/
+Buffer.from = function (value, encodingOrOffset, length) {
+  return from(value, encodingOrOffset, length)
+}
+
+// Note: Change prototype *after* Buffer.from is defined to workaround Chrome bug:
+// https://github.com/feross/buffer/pull/148
+Buffer.prototype.__proto__ = Uint8Array.prototype
+Buffer.__proto__ = Uint8Array
+
+function assertSize (size) {
+  if (typeof size !== 'number') {
+    throw new TypeError('"size" argument must be of type number')
+  } else if (size < 0) {
+    throw new RangeError('The value "' + size + '" is invalid for option "size"')
+  }
+}
+
+function alloc (size, fill, encoding) {
+  assertSize(size)
+  if (size <= 0) {
+    return createBuffer(size)
+  }
+  if (fill !== undefined) {
+    // Only pay attention to encoding if it's a string. This
+    // prevents accidentally sending in a number that would
+    // be interpretted as a start offset.
+    return typeof encoding === 'string'
+      ? createBuffer(size).fill(fill, encoding)
+      : createBuffer(size).fill(fill)
+  }
+  return createBuffer(size)
+}
+
+/**
+ * Creates a new filled Buffer instance.
+ * alloc(size[, fill[, encoding]])
+ **/
+Buffer.alloc = function (size, fill, encoding) {
+  return alloc(size, fill, encoding)
+}
+
+function allocUnsafe (size) {
+  assertSize(size)
+  return createBuffer(size < 0 ? 0 : checked(size) | 0)
+}
+
+/**
+ * Equivalent to Buffer(num), by default creates a non-zero-filled Buffer instance.
+ * */
+Buffer.allocUnsafe = function (size) {
+  return allocUnsafe(size)
+}
+/**
+ * Equivalent to SlowBuffer(num), by default creates a non-zero-filled Buffer instance.
+ */
+Buffer.allocUnsafeSlow = function (size) {
+  return allocUnsafe(size)
+}
+
+function fromString (string, encoding) {
+  if (typeof encoding !== 'string' || encoding === '') {
+    encoding = 'utf8'
+  }
+
+  if (!Buffer.isEncoding(encoding)) {
+    throw new TypeError('Unknown encoding: ' + encoding)
+  }
+
+  var length = byteLength(string, encoding) | 0
+  var buf = createBuffer(length)
+
+  var actual = buf.write(string, encoding)
+
+  if (actual !== length) {
+    // Writing a hex string, for example, that contains invalid characters will
+    // cause everything after the first invalid character to be ignored. (e.g.
+    // 'abxxcd' will be treated as 'ab')
+    buf = buf.slice(0, actual)
+  }
+
+  return buf
+}
+
+function fromArrayLike (array) {
+  var length = array.length < 0 ? 0 : checked(array.length) | 0
+  var buf = createBuffer(length)
+  for (var i = 0; i < length; i += 1) {
+    buf[i] = array[i] & 255
+  }
+  return buf
+}
+
+function fromArrayBuffer (array, byteOffset, length) {
+  if (byteOffset < 0 || array.byteLength < byteOffset) {
+    throw new RangeError('"offset" is outside of buffer bounds')
+  }
+
+  if (array.byteLength < byteOffset + (length || 0)) {
+    throw new RangeError('"length" is outside of buffer bounds')
+  }
+
+  var buf
+  if (byteOffset === undefined && length === undefined) {
+    buf = new Uint8Array(array)
+  } else if (length === undefined) {
+    buf = new Uint8Array(array, byteOffset)
+  } else {
+    buf = new Uint8Array(array, byteOffset, length)
+  }
+
+  // Return an augmented `Uint8Array` instance
+  buf.__proto__ = Buffer.prototype
+  return buf
+}
+
+function fromObject (obj) {
+  if (Buffer.isBuffer(obj)) {
+    var len = checked(obj.length) | 0
+    var buf = createBuffer(len)
+
+    if (buf.length === 0) {
+      return buf
+    }
+
+    obj.copy(buf, 0, 0, len)
+    return buf
+  }
+
+  if (obj.length !== undefined) {
+    if (typeof obj.length !== 'number' || numberIsNaN(obj.length)) {
+      return createBuffer(0)
+    }
+    return fromArrayLike(obj)
+  }
+
+  if (obj.type === 'Buffer' && Array.isArray(obj.data)) {
+    return fromArrayLike(obj.data)
+  }
+}
+
+function checked (length) {
+  // Note: cannot use `length < K_MAX_LENGTH` here because that fails when
+  // length is NaN (which is otherwise coerced to zero.)
+  if (length >= K_MAX_LENGTH) {
+    throw new RangeError('Attempt to allocate Buffer larger than maximum ' +
+                         'size: 0x' + K_MAX_LENGTH.toString(16) + ' bytes')
+  }
+  return length | 0
+}
+
+function SlowBuffer (length) {
+  if (+length != length) { // eslint-disable-line eqeqeq
+    length = 0
+  }
+  return Buffer.alloc(+length)
+}
+
+Buffer.isBuffer = function isBuffer (b) {
+  return b != null && b._isBuffer === true &&
+    b !== Buffer.prototype // so Buffer.isBuffer(Buffer.prototype) will be false
+}
+
+Buffer.compare = function compare (a, b) {
+  if (isInstance(a, Uint8Array)) a = Buffer.from(a, a.offset, a.byteLength)
+  if (isInstance(b, Uint8Array)) b = Buffer.from(b, b.offset, b.byteLength)
+  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
+    throw new TypeError(
+      'The "buf1", "buf2" arguments must be one of type Buffer or Uint8Array'
+    )
+  }
+
+  if (a === b) return 0
+
+  var x = a.length
+  var y = b.length
+
+  for (var i = 0, len = Math.min(x, y); i < len; ++i) {
+    if (a[i] !== b[i]) {
+      x = a[i]
+      y = b[i]
+      break
+    }
+  }
+
+  if (x < y) return -1
+  if (y < x) return 1
+  return 0
+}
+
+Buffer.isEncoding = function isEncoding (encoding) {
+  switch (String(encoding).toLowerCase()) {
+    case 'hex':
+    case 'utf8':
+    case 'utf-8':
+    case 'ascii':
+    case 'latin1':
+    case 'binary':
+    case 'base64':
+    case 'ucs2':
+    case 'ucs-2':
+    case 'utf16le':
+    case 'utf-16le':
+      return true
+    default:
+      return false
+  }
+}
+
+Buffer.concat = function concat (list, length) {
+  if (!Array.isArray(list)) {
+    throw new TypeError('"list" argument must be an Array of Buffers')
+  }
+
+  if (list.length === 0) {
+    return Buffer.alloc(0)
+  }
+
+  var i
+  if (length === undefined) {
+    length = 0
+    for (i = 0; i < list.length; ++i) {
+      length += list[i].length
+    }
+  }
+
+  var buffer = Buffer.allocUnsafe(length)
+  var pos = 0
+  for (i = 0; i < list.length; ++i) {
+    var buf = list[i]
+    if (isInstance(buf, Uint8Array)) {
+      buf = Buffer.from(buf)
+    }
+    if (!Buffer.isBuffer(buf)) {
+      throw new TypeError('"list" argument must be an Array of Buffers')
+    }
+    buf.copy(buffer, pos)
+    pos += buf.length
+  }
+  return buffer
+}
+
+function byteLength (string, encoding) {
+  if (Buffer.isBuffer(string)) {
+    return string.length
+  }
+  if (ArrayBuffer.isView(string) || isInstance(string, ArrayBuffer)) {
+    return string.byteLength
+  }
+  if (typeof string !== 'string') {
+    throw new TypeError(
+      'The "string" argument must be one of type string, Buffer, or ArrayBuffer. ' +
+      'Received type ' + typeof string
+    )
+  }
+
+  var len = string.length
+  var mustMatch = (arguments.length > 2 && arguments[2] === true)
+  if (!mustMatch && len === 0) return 0
+
+  // Use a for loop to avoid recursion
+  var loweredCase = false
+  for (;;) {
+    switch (encoding) {
+      case 'ascii':
+      case 'latin1':
+      case 'binary':
+        return len
+      case 'utf8':
+      case 'utf-8':
+        return utf8ToBytes(string).length
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return len * 2
+      case 'hex':
+        return len >>> 1
+      case 'base64':
+        return base64ToBytes(string).length
+      default:
+        if (loweredCase) {
+          return mustMatch ? -1 : utf8ToBytes(string).length // assume utf8
+        }
+        encoding = ('' + encoding).toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+Buffer.byteLength = byteLength
+
+function slowToString (encoding, start, end) {
+  var loweredCase = false
+
+  // No need to verify that "this.length <= MAX_UINT32" since it's a read-only
+  // property of a typed array.
+
+  // This behaves neither like String nor Uint8Array in that we set start/end
+  // to their upper/lower bounds if the value passed is out of range.
+  // undefined is handled specially as per ECMA-262 6th Edition,
+  // Section 13.3.3.7 Runtime Semantics: KeyedBindingInitialization.
+  if (start === undefined || start < 0) {
+    start = 0
+  }
+  // Return early if start > this.length. Done here to prevent potential uint32
+  // coercion fail below.
+  if (start > this.length) {
+    return ''
+  }
+
+  if (end === undefined || end > this.length) {
+    end = this.length
+  }
+
+  if (end <= 0) {
+    return ''
+  }
+
+  // Force coersion to uint32. This will also coerce falsey/NaN values to 0.
+  end >>>= 0
+  start >>>= 0
+
+  if (end <= start) {
+    return ''
+  }
+
+  if (!encoding) encoding = 'utf8'
+
+  while (true) {
+    switch (encoding) {
+      case 'hex':
+        return hexSlice(this, start, end)
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Slice(this, start, end)
+
+      case 'ascii':
+        return asciiSlice(this, start, end)
+
+      case 'latin1':
+      case 'binary':
+        return latin1Slice(this, start, end)
+
+      case 'base64':
+        return base64Slice(this, start, end)
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return utf16leSlice(this, start, end)
+
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = (encoding + '').toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+
+// This property is used by `Buffer.isBuffer` (and the `is-buffer` npm package)
+// to detect a Buffer instance. It's not possible to use `instanceof Buffer`
+// reliably in a browserify context because there could be multiple different
+// copies of the 'buffer' package in use. This method works even for Buffer
+// instances that were created from another copy of the `buffer` package.
+// See: https://github.com/feross/buffer/issues/154
+Buffer.prototype._isBuffer = true
+
+function swap (b, n, m) {
+  var i = b[n]
+  b[n] = b[m]
+  b[m] = i
+}
+
+Buffer.prototype.swap16 = function swap16 () {
+  var len = this.length
+  if (len % 2 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 16-bits')
+  }
+  for (var i = 0; i < len; i += 2) {
+    swap(this, i, i + 1)
+  }
+  return this
+}
+
+Buffer.prototype.swap32 = function swap32 () {
+  var len = this.length
+  if (len % 4 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 32-bits')
+  }
+  for (var i = 0; i < len; i += 4) {
+    swap(this, i, i + 3)
+    swap(this, i + 1, i + 2)
+  }
+  return this
+}
+
+Buffer.prototype.swap64 = function swap64 () {
+  var len = this.length
+  if (len % 8 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 64-bits')
+  }
+  for (var i = 0; i < len; i += 8) {
+    swap(this, i, i + 7)
+    swap(this, i + 1, i + 6)
+    swap(this, i + 2, i + 5)
+    swap(this, i + 3, i + 4)
+  }
+  return this
+}
+
+Buffer.prototype.toString = function toString () {
+  var length = this.length
+  if (length === 0) return ''
+  if (arguments.length === 0) return utf8Slice(this, 0, length)
+  return slowToString.apply(this, arguments)
+}
+
+Buffer.prototype.toLocaleString = Buffer.prototype.toString
+
+Buffer.prototype.equals = function equals (b) {
+  if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
+  if (this === b) return true
+  return Buffer.compare(this, b) === 0
+}
+
+Buffer.prototype.inspect = function inspect () {
+  var str = ''
+  var max = exports.INSPECT_MAX_BYTES
+  str = this.toString('hex', 0, max).replace(/(.{2})/g, '$1 ').trim()
+  if (this.length > max) str += ' ... '
+  return '<Buffer ' + str + '>'
+}
+
+Buffer.prototype.compare = function compare (target, start, end, thisStart, thisEnd) {
+  if (isInstance(target, Uint8Array)) {
+    target = Buffer.from(target, target.offset, target.byteLength)
+  }
+  if (!Buffer.isBuffer(target)) {
+    throw new TypeError(
+      'The "target" argument must be one of type Buffer or Uint8Array. ' +
+      'Received type ' + (typeof target)
+    )
+  }
+
+  if (start === undefined) {
+    start = 0
+  }
+  if (end === undefined) {
+    end = target ? target.length : 0
+  }
+  if (thisStart === undefined) {
+    thisStart = 0
+  }
+  if (thisEnd === undefined) {
+    thisEnd = this.length
+  }
+
+  if (start < 0 || end > target.length || thisStart < 0 || thisEnd > this.length) {
+    throw new RangeError('out of range index')
+  }
+
+  if (thisStart >= thisEnd && start >= end) {
+    return 0
+  }
+  if (thisStart >= thisEnd) {
+    return -1
+  }
+  if (start >= end) {
+    return 1
+  }
+
+  start >>>= 0
+  end >>>= 0
+  thisStart >>>= 0
+  thisEnd >>>= 0
+
+  if (this === target) return 0
+
+  var x = thisEnd - thisStart
+  var y = end - start
+  var len = Math.min(x, y)
+
+  var thisCopy = this.slice(thisStart, thisEnd)
+  var targetCopy = target.slice(start, end)
+
+  for (var i = 0; i < len; ++i) {
+    if (thisCopy[i] !== targetCopy[i]) {
+      x = thisCopy[i]
+      y = targetCopy[i]
+      break
+    }
+  }
+
+  if (x < y) return -1
+  if (y < x) return 1
+  return 0
+}
+
+// Finds either the first index of `val` in `buffer` at offset >= `byteOffset`,
+// OR the last index of `val` in `buffer` at offset <= `byteOffset`.
+//
+// Arguments:
+// - buffer - a Buffer to search
+// - val - a string, Buffer, or number
+// - byteOffset - an index into `buffer`; will be clamped to an int32
+// - encoding - an optional encoding, relevant is val is a string
+// - dir - true for indexOf, false for lastIndexOf
+function bidirectionalIndexOf (buffer, val, byteOffset, encoding, dir) {
+  // Empty buffer means no match
+  if (buffer.length === 0) return -1
+
+  // Normalize byteOffset
+  if (typeof byteOffset === 'string') {
+    encoding = byteOffset
+    byteOffset = 0
+  } else if (byteOffset > 0x7fffffff) {
+    byteOffset = 0x7fffffff
+  } else if (byteOffset < -0x80000000) {
+    byteOffset = -0x80000000
+  }
+  byteOffset = +byteOffset // Coerce to Number.
+  if (numberIsNaN(byteOffset)) {
+    // byteOffset: it it's undefined, null, NaN, "foo", etc, search whole buffer
+    byteOffset = dir ? 0 : (buffer.length - 1)
+  }
+
+  // Normalize byteOffset: negative offsets start from the end of the buffer
+  if (byteOffset < 0) byteOffset = buffer.length + byteOffset
+  if (byteOffset >= buffer.length) {
+    if (dir) return -1
+    else byteOffset = buffer.length - 1
+  } else if (byteOffset < 0) {
+    if (dir) byteOffset = 0
+    else return -1
+  }
+
+  // Normalize val
+  if (typeof val === 'string') {
+    val = Buffer.from(val, encoding)
+  }
+
+  // Finally, search either indexOf (if dir is true) or lastIndexOf
+  if (Buffer.isBuffer(val)) {
+    // Special case: looking for empty string/buffer always fails
+    if (val.length === 0) {
+      return -1
+    }
+    return arrayIndexOf(buffer, val, byteOffset, encoding, dir)
+  } else if (typeof val === 'number') {
+    val = val & 0xFF // Search for a byte value [0-255]
+    if (typeof Uint8Array.prototype.indexOf === 'function') {
+      if (dir) {
+        return Uint8Array.prototype.indexOf.call(buffer, val, byteOffset)
+      } else {
+        return Uint8Array.prototype.lastIndexOf.call(buffer, val, byteOffset)
+      }
+    }
+    return arrayIndexOf(buffer, [ val ], byteOffset, encoding, dir)
+  }
+
+  throw new TypeError('val must be string, number or Buffer')
+}
+
+function arrayIndexOf (arr, val, byteOffset, encoding, dir) {
+  var indexSize = 1
+  var arrLength = arr.length
+  var valLength = val.length
+
+  if (encoding !== undefined) {
+    encoding = String(encoding).toLowerCase()
+    if (encoding === 'ucs2' || encoding === 'ucs-2' ||
+        encoding === 'utf16le' || encoding === 'utf-16le') {
+      if (arr.length < 2 || val.length < 2) {
+        return -1
+      }
+      indexSize = 2
+      arrLength /= 2
+      valLength /= 2
+      byteOffset /= 2
+    }
+  }
+
+  function read (buf, i) {
+    if (indexSize === 1) {
+      return buf[i]
+    } else {
+      return buf.readUInt16BE(i * indexSize)
+    }
+  }
+
+  var i
+  if (dir) {
+    var foundIndex = -1
+    for (i = byteOffset; i < arrLength; i++) {
+      if (read(arr, i) === read(val, foundIndex === -1 ? 0 : i - foundIndex)) {
+        if (foundIndex === -1) foundIndex = i
+        if (i - foundIndex + 1 === valLength) return foundIndex * indexSize
+      } else {
+        if (foundIndex !== -1) i -= i - foundIndex
+        foundIndex = -1
+      }
+    }
+  } else {
+    if (byteOffset + valLength > arrLength) byteOffset = arrLength - valLength
+    for (i = byteOffset; i >= 0; i--) {
+      var found = true
+      for (var j = 0; j < valLength; j++) {
+        if (read(arr, i + j) !== read(val, j)) {
+          found = false
+          break
+        }
+      }
+      if (found) return i
+    }
+  }
+
+  return -1
+}
+
+Buffer.prototype.includes = function includes (val, byteOffset, encoding) {
+  return this.indexOf(val, byteOffset, encoding) !== -1
+}
+
+Buffer.prototype.indexOf = function indexOf (val, byteOffset, encoding) {
+  return bidirectionalIndexOf(this, val, byteOffset, encoding, true)
+}
+
+Buffer.prototype.lastIndexOf = function lastIndexOf (val, byteOffset, encoding) {
+  return bidirectionalIndexOf(this, val, byteOffset, encoding, false)
+}
+
+function hexWrite (buf, string, offset, length) {
+  offset = Number(offset) || 0
+  var remaining = buf.length - offset
+  if (!length) {
+    length = remaining
+  } else {
+    length = Number(length)
+    if (length > remaining) {
+      length = remaining
+    }
+  }
+
+  var strLen = string.length
+
+  if (length > strLen / 2) {
+    length = strLen / 2
+  }
+  for (var i = 0; i < length; ++i) {
+    var parsed = parseInt(string.substr(i * 2, 2), 16)
+    if (numberIsNaN(parsed)) return i
+    buf[offset + i] = parsed
+  }
+  return i
+}
+
+function utf8Write (buf, string, offset, length) {
+  return blitBuffer(utf8ToBytes(string, buf.length - offset), buf, offset, length)
+}
+
+function asciiWrite (buf, string, offset, length) {
+  return blitBuffer(asciiToBytes(string), buf, offset, length)
+}
+
+function latin1Write (buf, string, offset, length) {
+  return asciiWrite(buf, string, offset, length)
+}
+
+function base64Write (buf, string, offset, length) {
+  return blitBuffer(base64ToBytes(string), buf, offset, length)
+}
+
+function ucs2Write (buf, string, offset, length) {
+  return blitBuffer(utf16leToBytes(string, buf.length - offset), buf, offset, length)
+}
+
+Buffer.prototype.write = function write (string, offset, length, encoding) {
+  // Buffer#write(string)
+  if (offset === undefined) {
+    encoding = 'utf8'
+    length = this.length
+    offset = 0
+  // Buffer#write(string, encoding)
+  } else if (length === undefined && typeof offset === 'string') {
+    encoding = offset
+    length = this.length
+    offset = 0
+  // Buffer#write(string, offset[, length][, encoding])
+  } else if (isFinite(offset)) {
+    offset = offset >>> 0
+    if (isFinite(length)) {
+      length = length >>> 0
+      if (encoding === undefined) encoding = 'utf8'
+    } else {
+      encoding = length
+      length = undefined
+    }
+  } else {
+    throw new Error(
+      'Buffer.write(string, encoding, offset[, length]) is no longer supported'
+    )
+  }
+
+  var remaining = this.length - offset
+  if (length === undefined || length > remaining) length = remaining
+
+  if ((string.length > 0 && (length < 0 || offset < 0)) || offset > this.length) {
+    throw new RangeError('Attempt to write outside buffer bounds')
+  }
+
+  if (!encoding) encoding = 'utf8'
+
+  var loweredCase = false
+  for (;;) {
+    switch (encoding) {
+      case 'hex':
+        return hexWrite(this, string, offset, length)
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Write(this, string, offset, length)
+
+      case 'ascii':
+        return asciiWrite(this, string, offset, length)
+
+      case 'latin1':
+      case 'binary':
+        return latin1Write(this, string, offset, length)
+
+      case 'base64':
+        // Warning: maxLength not taken into account in base64Write
+        return base64Write(this, string, offset, length)
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return ucs2Write(this, string, offset, length)
+
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
+        encoding = ('' + encoding).toLowerCase()
+        loweredCase = true
+    }
+  }
+}
+
+Buffer.prototype.toJSON = function toJSON () {
+  return {
+    type: 'Buffer',
+    data: Array.prototype.slice.call(this._arr || this, 0)
+  }
+}
+
+function base64Slice (buf, start, end) {
+  if (start === 0 && end === buf.length) {
+    return base64.fromByteArray(buf)
+  } else {
+    return base64.fromByteArray(buf.slice(start, end))
+  }
+}
+
+function utf8Slice (buf, start, end) {
+  end = Math.min(buf.length, end)
+  var res = []
+
+  var i = start
+  while (i < end) {
+    var firstByte = buf[i]
+    var codePoint = null
+    var bytesPerSequence = (firstByte > 0xEF) ? 4
+      : (firstByte > 0xDF) ? 3
+        : (firstByte > 0xBF) ? 2
+          : 1
+
+    if (i + bytesPerSequence <= end) {
+      var secondByte, thirdByte, fourthByte, tempCodePoint
+
+      switch (bytesPerSequence) {
+        case 1:
+          if (firstByte < 0x80) {
+            codePoint = firstByte
+          }
+          break
+        case 2:
+          secondByte = buf[i + 1]
+          if ((secondByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0x1F) << 0x6 | (secondByte & 0x3F)
+            if (tempCodePoint > 0x7F) {
+              codePoint = tempCodePoint
+            }
+          }
+          break
+        case 3:
+          secondByte = buf[i + 1]
+          thirdByte = buf[i + 2]
+          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0xF) << 0xC | (secondByte & 0x3F) << 0x6 | (thirdByte & 0x3F)
+            if (tempCodePoint > 0x7FF && (tempCodePoint < 0xD800 || tempCodePoint > 0xDFFF)) {
+              codePoint = tempCodePoint
+            }
+          }
+          break
+        case 4:
+          secondByte = buf[i + 1]
+          thirdByte = buf[i + 2]
+          fourthByte = buf[i + 3]
+          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80 && (fourthByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0xF) << 0x12 | (secondByte & 0x3F) << 0xC | (thirdByte & 0x3F) << 0x6 | (fourthByte & 0x3F)
+            if (tempCodePoint > 0xFFFF && tempCodePoint < 0x110000) {
+              codePoint = tempCodePoint
+            }
+          }
+      }
+    }
+
+    if (codePoint === null) {
+      // we did not generate a valid codePoint so insert a
+      // replacement char (U+FFFD) and advance only 1 byte
+      codePoint = 0xFFFD
+      bytesPerSequence = 1
+    } else if (codePoint > 0xFFFF) {
+      // encode to utf16 (surrogate pair dance)
+      codePoint -= 0x10000
+      res.push(codePoint >>> 10 & 0x3FF | 0xD800)
+      codePoint = 0xDC00 | codePoint & 0x3FF
+    }
+
+    res.push(codePoint)
+    i += bytesPerSequence
+  }
+
+  return decodeCodePointsArray(res)
+}
+
+// Based on http://stackoverflow.com/a/22747272/680742, the browser with
+// the lowest limit is Chrome, with 0x10000 args.
+// We go 1 magnitude less, for safety
+var MAX_ARGUMENTS_LENGTH = 0x1000
+
+function decodeCodePointsArray (codePoints) {
+  var len = codePoints.length
+  if (len <= MAX_ARGUMENTS_LENGTH) {
+    return String.fromCharCode.apply(String, codePoints) // avoid extra slice()
+  }
+
+  // Decode in chunks to avoid "call stack size exceeded".
+  var res = ''
+  var i = 0
+  while (i < len) {
+    res += String.fromCharCode.apply(
+      String,
+      codePoints.slice(i, i += MAX_ARGUMENTS_LENGTH)
+    )
+  }
+  return res
+}
+
+function asciiSlice (buf, start, end) {
+  var ret = ''
+  end = Math.min(buf.length, end)
+
+  for (var i = start; i < end; ++i) {
+    ret += String.fromCharCode(buf[i] & 0x7F)
+  }
+  return ret
+}
+
+function latin1Slice (buf, start, end) {
+  var ret = ''
+  end = Math.min(buf.length, end)
+
+  for (var i = start; i < end; ++i) {
+    ret += String.fromCharCode(buf[i])
+  }
+  return ret
+}
+
+function hexSlice (buf, start, end) {
+  var len = buf.length
+
+  if (!start || start < 0) start = 0
+  if (!end || end < 0 || end > len) end = len
+
+  var out = ''
+  for (var i = start; i < end; ++i) {
+    out += toHex(buf[i])
+  }
+  return out
+}
+
+function utf16leSlice (buf, start, end) {
+  var bytes = buf.slice(start, end)
+  var res = ''
+  for (var i = 0; i < bytes.length; i += 2) {
+    res += String.fromCharCode(bytes[i] + (bytes[i + 1] * 256))
+  }
+  return res
+}
+
+Buffer.prototype.slice = function slice (start, end) {
+  var len = this.length
+  start = ~~start
+  end = end === undefined ? len : ~~end
+
+  if (start < 0) {
+    start += len
+    if (start < 0) start = 0
+  } else if (start > len) {
+    start = len
+  }
+
+  if (end < 0) {
+    end += len
+    if (end < 0) end = 0
+  } else if (end > len) {
+    end = len
+  }
+
+  if (end < start) end = start
+
+  var newBuf = this.subarray(start, end)
+  // Return an augmented `Uint8Array` instance
+  newBuf.__proto__ = Buffer.prototype
+  return newBuf
+}
+
+/*
+ * Need to make sure that buffer isn't trying to write out of bounds.
+ */
+function checkOffset (offset, ext, length) {
+  if ((offset % 1) !== 0 || offset < 0) throw new RangeError('offset is not uint')
+  if (offset + ext > length) throw new RangeError('Trying to access beyond buffer length')
+}
+
+Buffer.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert) {
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var val = this[offset]
+  var mul = 1
+  var i = 0
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul
+  }
+
+  return val
+}
+
+Buffer.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert) {
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) {
+    checkOffset(offset, byteLength, this.length)
+  }
+
+  var val = this[offset + --byteLength]
+  var mul = 1
+  while (byteLength > 0 && (mul *= 0x100)) {
+    val += this[offset + --byteLength] * mul
+  }
+
+  return val
+}
+
+Buffer.prototype.readUInt8 = function readUInt8 (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  return this[offset]
+}
+
+Buffer.prototype.readUInt16LE = function readUInt16LE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  return this[offset] | (this[offset + 1] << 8)
+}
+
+Buffer.prototype.readUInt16BE = function readUInt16BE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  return (this[offset] << 8) | this[offset + 1]
+}
+
+Buffer.prototype.readUInt32LE = function readUInt32LE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return ((this[offset]) |
+      (this[offset + 1] << 8) |
+      (this[offset + 2] << 16)) +
+      (this[offset + 3] * 0x1000000)
+}
+
+Buffer.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset] * 0x1000000) +
+    ((this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    this[offset + 3])
+}
+
+Buffer.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var val = this[offset]
+  var mul = 1
+  var i = 0
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul
+  }
+  mul *= 0x80
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+  return val
+}
+
+Buffer.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) checkOffset(offset, byteLength, this.length)
+
+  var i = byteLength
+  var mul = 1
+  var val = this[offset + --i]
+  while (i > 0 && (mul *= 0x100)) {
+    val += this[offset + --i] * mul
+  }
+  mul *= 0x80
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
+
+  return val
+}
+
+Buffer.prototype.readInt8 = function readInt8 (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 1, this.length)
+  if (!(this[offset] & 0x80)) return (this[offset])
+  return ((0xff - this[offset] + 1) * -1)
+}
+
+Buffer.prototype.readInt16LE = function readInt16LE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  var val = this[offset] | (this[offset + 1] << 8)
+  return (val & 0x8000) ? val | 0xFFFF0000 : val
+}
+
+Buffer.prototype.readInt16BE = function readInt16BE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 2, this.length)
+  var val = this[offset + 1] | (this[offset] << 8)
+  return (val & 0x8000) ? val | 0xFFFF0000 : val
+}
+
+Buffer.prototype.readInt32LE = function readInt32LE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset]) |
+    (this[offset + 1] << 8) |
+    (this[offset + 2] << 16) |
+    (this[offset + 3] << 24)
+}
+
+Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+
+  return (this[offset] << 24) |
+    (this[offset + 1] << 16) |
+    (this[offset + 2] << 8) |
+    (this[offset + 3])
+}
+
+Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+  return ieee754.read(this, offset, true, 23, 4)
+}
+
+Buffer.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 4, this.length)
+  return ieee754.read(this, offset, false, 23, 4)
+}
+
+Buffer.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 8, this.length)
+  return ieee754.read(this, offset, true, 52, 8)
+}
+
+Buffer.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
+  offset = offset >>> 0
+  if (!noAssert) checkOffset(offset, 8, this.length)
+  return ieee754.read(this, offset, false, 52, 8)
+}
+
+function checkInt (buf, value, offset, ext, max, min) {
+  if (!Buffer.isBuffer(buf)) throw new TypeError('"buffer" argument must be a Buffer instance')
+  if (value > max || value < min) throw new RangeError('"value" argument is out of bounds')
+  if (offset + ext > buf.length) throw new RangeError('Index out of range')
+}
+
+Buffer.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) {
+    var maxBytes = Math.pow(2, 8 * byteLength) - 1
+    checkInt(this, value, offset, byteLength, maxBytes, 0)
+  }
+
+  var mul = 1
+  var i = 0
+  this[offset] = value & 0xFF
+  while (++i < byteLength && (mul *= 0x100)) {
+    this[offset + i] = (value / mul) & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  byteLength = byteLength >>> 0
+  if (!noAssert) {
+    var maxBytes = Math.pow(2, 8 * byteLength) - 1
+    checkInt(this, value, offset, byteLength, maxBytes, 0)
+  }
+
+  var i = byteLength - 1
+  var mul = 1
+  this[offset + i] = value & 0xFF
+  while (--i >= 0 && (mul *= 0x100)) {
+    this[offset + i] = (value / mul) & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeUInt8 = function writeUInt8 (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 1, 0xff, 0)
+  this[offset] = (value & 0xff)
+  return offset + 1
+}
+
+Buffer.prototype.writeUInt16LE = function writeUInt16LE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+  this[offset] = (value & 0xff)
+  this[offset + 1] = (value >>> 8)
+  return offset + 2
+}
+
+Buffer.prototype.writeUInt16BE = function writeUInt16BE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
+  this[offset] = (value >>> 8)
+  this[offset + 1] = (value & 0xff)
+  return offset + 2
+}
+
+Buffer.prototype.writeUInt32LE = function writeUInt32LE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+  this[offset + 3] = (value >>> 24)
+  this[offset + 2] = (value >>> 16)
+  this[offset + 1] = (value >>> 8)
+  this[offset] = (value & 0xff)
+  return offset + 4
+}
+
+Buffer.prototype.writeUInt32BE = function writeUInt32BE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
+  this[offset] = (value >>> 24)
+  this[offset + 1] = (value >>> 16)
+  this[offset + 2] = (value >>> 8)
+  this[offset + 3] = (value & 0xff)
+  return offset + 4
+}
+
+Buffer.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) {
+    var limit = Math.pow(2, (8 * byteLength) - 1)
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+  }
+
+  var i = 0
+  var mul = 1
+  var sub = 0
+  this[offset] = value & 0xFF
+  while (++i < byteLength && (mul *= 0x100)) {
+    if (value < 0 && sub === 0 && this[offset + i - 1] !== 0) {
+      sub = 1
+    }
+    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) {
+    var limit = Math.pow(2, (8 * byteLength) - 1)
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit)
+  }
+
+  var i = byteLength - 1
+  var mul = 1
+  var sub = 0
+  this[offset + i] = value & 0xFF
+  while (--i >= 0 && (mul *= 0x100)) {
+    if (value < 0 && sub === 0 && this[offset + i + 1] !== 0) {
+      sub = 1
+    }
+    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
+  }
+
+  return offset + byteLength
+}
+
+Buffer.prototype.writeInt8 = function writeInt8 (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 1, 0x7f, -0x80)
+  if (value < 0) value = 0xff + value + 1
+  this[offset] = (value & 0xff)
+  return offset + 1
+}
+
+Buffer.prototype.writeInt16LE = function writeInt16LE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  this[offset] = (value & 0xff)
+  this[offset + 1] = (value >>> 8)
+  return offset + 2
+}
+
+Buffer.prototype.writeInt16BE = function writeInt16BE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
+  this[offset] = (value >>> 8)
+  this[offset + 1] = (value & 0xff)
+  return offset + 2
+}
+
+Buffer.prototype.writeInt32LE = function writeInt32LE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  this[offset] = (value & 0xff)
+  this[offset + 1] = (value >>> 8)
+  this[offset + 2] = (value >>> 16)
+  this[offset + 3] = (value >>> 24)
+  return offset + 4
+}
+
+Buffer.prototype.writeInt32BE = function writeInt32BE (value, offset, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
+  if (value < 0) value = 0xffffffff + value + 1
+  this[offset] = (value >>> 24)
+  this[offset + 1] = (value >>> 16)
+  this[offset + 2] = (value >>> 8)
+  this[offset + 3] = (value & 0xff)
+  return offset + 4
+}
+
+function checkIEEE754 (buf, value, offset, ext, max, min) {
+  if (offset + ext > buf.length) throw new RangeError('Index out of range')
+  if (offset < 0) throw new RangeError('Index out of range')
+}
+
+function writeFloat (buf, value, offset, littleEndian, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 4, 3.4028234663852886e+38, -3.4028234663852886e+38)
+  }
+  ieee754.write(buf, value, offset, littleEndian, 23, 4)
+  return offset + 4
+}
+
+Buffer.prototype.writeFloatLE = function writeFloatLE (value, offset, noAssert) {
+  return writeFloat(this, value, offset, true, noAssert)
+}
+
+Buffer.prototype.writeFloatBE = function writeFloatBE (value, offset, noAssert) {
+  return writeFloat(this, value, offset, false, noAssert)
+}
+
+function writeDouble (buf, value, offset, littleEndian, noAssert) {
+  value = +value
+  offset = offset >>> 0
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 8, 1.7976931348623157E+308, -1.7976931348623157E+308)
+  }
+  ieee754.write(buf, value, offset, littleEndian, 52, 8)
+  return offset + 8
+}
+
+Buffer.prototype.writeDoubleLE = function writeDoubleLE (value, offset, noAssert) {
+  return writeDouble(this, value, offset, true, noAssert)
+}
+
+Buffer.prototype.writeDoubleBE = function writeDoubleBE (value, offset, noAssert) {
+  return writeDouble(this, value, offset, false, noAssert)
+}
+
+// copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
+Buffer.prototype.copy = function copy (target, targetStart, start, end) {
+  if (!Buffer.isBuffer(target)) throw new TypeError('argument should be a Buffer')
+  if (!start) start = 0
+  if (!end && end !== 0) end = this.length
+  if (targetStart >= target.length) targetStart = target.length
+  if (!targetStart) targetStart = 0
+  if (end > 0 && end < start) end = start
+
+  // Copy 0 bytes; we're done
+  if (end === start) return 0
+  if (target.length === 0 || this.length === 0) return 0
+
+  // Fatal error conditions
+  if (targetStart < 0) {
+    throw new RangeError('targetStart out of bounds')
+  }
+  if (start < 0 || start >= this.length) throw new RangeError('Index out of range')
+  if (end < 0) throw new RangeError('sourceEnd out of bounds')
+
+  // Are we oob?
+  if (end > this.length) end = this.length
+  if (target.length - targetStart < end - start) {
+    end = target.length - targetStart + start
+  }
+
+  var len = end - start
+
+  if (this === target && typeof Uint8Array.prototype.copyWithin === 'function') {
+    // Use built-in when available, missing from IE11
+    this.copyWithin(targetStart, start, end)
+  } else if (this === target && start < targetStart && targetStart < end) {
+    // descending copy from end
+    for (var i = len - 1; i >= 0; --i) {
+      target[i + targetStart] = this[i + start]
+    }
+  } else {
+    Uint8Array.prototype.set.call(
+      target,
+      this.subarray(start, end),
+      targetStart
+    )
+  }
+
+  return len
+}
+
+// Usage:
+//    buffer.fill(number[, offset[, end]])
+//    buffer.fill(buffer[, offset[, end]])
+//    buffer.fill(string[, offset[, end]][, encoding])
+Buffer.prototype.fill = function fill (val, start, end, encoding) {
+  // Handle string cases:
+  if (typeof val === 'string') {
+    if (typeof start === 'string') {
+      encoding = start
+      start = 0
+      end = this.length
+    } else if (typeof end === 'string') {
+      encoding = end
+      end = this.length
+    }
+    if (encoding !== undefined && typeof encoding !== 'string') {
+      throw new TypeError('encoding must be a string')
+    }
+    if (typeof encoding === 'string' && !Buffer.isEncoding(encoding)) {
+      throw new TypeError('Unknown encoding: ' + encoding)
+    }
+    if (val.length === 1) {
+      var code = val.charCodeAt(0)
+      if ((encoding === 'utf8' && code < 128) ||
+          encoding === 'latin1') {
+        // Fast path: If `val` fits into a single byte, use that numeric value.
+        val = code
+      }
+    }
+  } else if (typeof val === 'number') {
+    val = val & 255
+  }
+
+  // Invalid ranges are not set to a default, so can range check early.
+  if (start < 0 || this.length < start || this.length < end) {
+    throw new RangeError('Out of range index')
+  }
+
+  if (end <= start) {
+    return this
+  }
+
+  start = start >>> 0
+  end = end === undefined ? this.length : end >>> 0
+
+  if (!val) val = 0
+
+  var i
+  if (typeof val === 'number') {
+    for (i = start; i < end; ++i) {
+      this[i] = val
+    }
+  } else {
+    var bytes = Buffer.isBuffer(val)
+      ? val
+      : Buffer.from(val, encoding)
+    var len = bytes.length
+    if (len === 0) {
+      throw new TypeError('The value "' + val +
+        '" is invalid for argument "value"')
+    }
+    for (i = 0; i < end - start; ++i) {
+      this[i + start] = bytes[i % len]
+    }
+  }
+
+  return this
+}
+
+// HELPER FUNCTIONS
+// ================
+
+var INVALID_BASE64_RE = /[^+/0-9A-Za-z-_]/g
+
+function base64clean (str) {
+  // Node takes equal signs as end of the Base64 encoding
+  str = str.split('=')[0]
+  // Node strips out invalid characters like \n and \t from the string, base64-js does not
+  str = str.trim().replace(INVALID_BASE64_RE, '')
+  // Node converts strings with length < 2 to ''
+  if (str.length < 2) return ''
+  // Node allows for non-padded base64 strings (missing trailing ===), base64-js does not
+  while (str.length % 4 !== 0) {
+    str = str + '='
+  }
+  return str
+}
+
+function toHex (n) {
+  if (n < 16) return '0' + n.toString(16)
+  return n.toString(16)
+}
+
+function utf8ToBytes (string, units) {
+  units = units || Infinity
+  var codePoint
+  var length = string.length
+  var leadSurrogate = null
+  var bytes = []
+
+  for (var i = 0; i < length; ++i) {
+    codePoint = string.charCodeAt(i)
+
+    // is surrogate component
+    if (codePoint > 0xD7FF && codePoint < 0xE000) {
+      // last char was a lead
+      if (!leadSurrogate) {
+        // no lead yet
+        if (codePoint > 0xDBFF) {
+          // unexpected trail
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          continue
+        } else if (i + 1 === length) {
+          // unpaired lead
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+          continue
+        }
+
+        // valid lead
+        leadSurrogate = codePoint
+
+        continue
+      }
+
+      // 2 leads in a row
+      if (codePoint < 0xDC00) {
+        if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+        leadSurrogate = codePoint
+        continue
+      }
+
+      // valid surrogate pair
+      codePoint = (leadSurrogate - 0xD800 << 10 | codePoint - 0xDC00) + 0x10000
+    } else if (leadSurrogate) {
+      // valid bmp char, but last char was a lead
+      if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
+    }
+
+    leadSurrogate = null
+
+    // encode utf8
+    if (codePoint < 0x80) {
+      if ((units -= 1) < 0) break
+      bytes.push(codePoint)
+    } else if (codePoint < 0x800) {
+      if ((units -= 2) < 0) break
+      bytes.push(
+        codePoint >> 0x6 | 0xC0,
+        codePoint & 0x3F | 0x80
+      )
+    } else if (codePoint < 0x10000) {
+      if ((units -= 3) < 0) break
+      bytes.push(
+        codePoint >> 0xC | 0xE0,
+        codePoint >> 0x6 & 0x3F | 0x80,
+        codePoint & 0x3F | 0x80
+      )
+    } else if (codePoint < 0x110000) {
+      if ((units -= 4) < 0) break
+      bytes.push(
+        codePoint >> 0x12 | 0xF0,
+        codePoint >> 0xC & 0x3F | 0x80,
+        codePoint >> 0x6 & 0x3F | 0x80,
+        codePoint & 0x3F | 0x80
+      )
+    } else {
+      throw new Error('Invalid code point')
+    }
+  }
+
+  return bytes
+}
+
+function asciiToBytes (str) {
+  var byteArray = []
+  for (var i = 0; i < str.length; ++i) {
+    // Node's code seems to be doing this and not & 0x7F..
+    byteArray.push(str.charCodeAt(i) & 0xFF)
+  }
+  return byteArray
+}
+
+function utf16leToBytes (str, units) {
+  var c, hi, lo
+  var byteArray = []
+  for (var i = 0; i < str.length; ++i) {
+    if ((units -= 2) < 0) break
+
+    c = str.charCodeAt(i)
+    hi = c >> 8
+    lo = c % 256
+    byteArray.push(lo)
+    byteArray.push(hi)
+  }
+
+  return byteArray
+}
+
+function base64ToBytes (str) {
+  return base64.toByteArray(base64clean(str))
+}
+
+function blitBuffer (src, dst, offset, length) {
+  for (var i = 0; i < length; ++i) {
+    if ((i + offset >= dst.length) || (i >= src.length)) break
+    dst[i + offset] = src[i]
+  }
+  return i
+}
+
+// ArrayBuffer or Uint8Array objects from other contexts (i.e. iframes) do not pass
+// the `instanceof` check but they should be treated as of that type.
+// See: https://github.com/feross/buffer/issues/166
+function isInstance (obj, type) {
+  return obj instanceof type ||
+    (obj != null && obj.constructor != null && obj.constructor.name != null &&
+      obj.constructor.name === type.name)
+}
+function numberIsNaN (obj) {
+  // For IE11 support
+  return obj !== obj // eslint-disable-line no-self-compare
+}
+
+}).call(this)}).call(this,require("buffer").Buffer)
+},{"base64-js":72,"buffer":73,"ieee754":74}],74:[function(require,module,exports){
+/*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
+exports.read = function (buffer, offset, isLE, mLen, nBytes) {
+  var e, m
+  var eLen = (nBytes * 8) - mLen - 1
+  var eMax = (1 << eLen) - 1
+  var eBias = eMax >> 1
+  var nBits = -7
+  var i = isLE ? (nBytes - 1) : 0
+  var d = isLE ? -1 : 1
+  var s = buffer[offset + i]
+
+  i += d
+
+  e = s & ((1 << (-nBits)) - 1)
+  s >>= (-nBits)
+  nBits += eLen
+  for (; nBits > 0; e = (e * 256) + buffer[offset + i], i += d, nBits -= 8) {}
+
+  m = e & ((1 << (-nBits)) - 1)
+  e >>= (-nBits)
+  nBits += mLen
+  for (; nBits > 0; m = (m * 256) + buffer[offset + i], i += d, nBits -= 8) {}
+
+  if (e === 0) {
+    e = 1 - eBias
+  } else if (e === eMax) {
+    return m ? NaN : ((s ? -1 : 1) * Infinity)
+  } else {
+    m = m + Math.pow(2, mLen)
+    e = e - eBias
+  }
+  return (s ? -1 : 1) * m * Math.pow(2, e - mLen)
+}
+
+exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
+  var e, m, c
+  var eLen = (nBytes * 8) - mLen - 1
+  var eMax = (1 << eLen) - 1
+  var eBias = eMax >> 1
+  var rt = (mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0)
+  var i = isLE ? 0 : (nBytes - 1)
+  var d = isLE ? 1 : -1
+  var s = value < 0 || (value === 0 && 1 / value < 0) ? 1 : 0
+
+  value = Math.abs(value)
+
+  if (isNaN(value) || value === Infinity) {
+    m = isNaN(value) ? 1 : 0
+    e = eMax
+  } else {
+    e = Math.floor(Math.log(value) / Math.LN2)
+    if (value * (c = Math.pow(2, -e)) < 1) {
+      e--
+      c *= 2
+    }
+    if (e + eBias >= 1) {
+      value += rt / c
+    } else {
+      value += rt * Math.pow(2, 1 - eBias)
+    }
+    if (value * c >= 2) {
+      e++
+      c /= 2
+    }
+
+    if (e + eBias >= eMax) {
+      m = 0
+      e = eMax
+    } else if (e + eBias >= 1) {
+      m = ((value * c) - 1) * Math.pow(2, mLen)
+      e = e + eBias
+    } else {
+      m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen)
+      e = 0
+    }
+  }
+
+  for (; mLen >= 8; buffer[offset + i] = m & 0xff, i += d, m /= 256, mLen -= 8) {}
+
+  e = (e << mLen) | m
+  eLen += mLen
+  for (; eLen > 0; buffer[offset + i] = e & 0xff, i += d, e /= 256, eLen -= 8) {}
+
+  buffer[offset + i - d] |= s * 128
+}
+
+},{}]},{},[16])(16)
+});
