@@ -1,14 +1,17 @@
 {
   "name": "community",
   "version": "1.0.0",
-  "description": "",
+  "description": "These are sources & trackers primarily supported by suwatte to extend reading & tracking capabilities",
   "main": "index.js",
+  "private": true,
   "scripts": {
     "build": "daisuke build",
     "serve": "daisuke serve",
     "test": "jest"
   },
-  "keywords": [],
+  "keywords": [
+    "suwatte"
+  ],
   "author": "Mantton <mantton.official@gmail.com>",
   "license": "MIT",
   "devDependencies": {
