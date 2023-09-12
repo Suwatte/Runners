@@ -18,7 +18,6 @@ export const KomgaPageLinkResolver: PageLinkResolver<Highlight> = {
   getSectionsForPage: async function (
     link: PageLink
   ): Promise<PageSection<Highlight>[]> {
-    console.log("[SECTIONS]", link);
     switch (link.key) {
       case "all":
       case "library": {
@@ -32,8 +31,6 @@ export const KomgaPageLinkResolver: PageLinkResolver<Highlight> = {
     link: PageLink,
     sectionKey: string
   ): Promise<ResolvedPageSection<Highlight>> {
-    console.log("[RESOLVE]", link);
-
     switch (link.key) {
       case "all":
       case "library": {
