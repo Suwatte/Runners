@@ -1,10 +1,4 @@
-import {
-  Chapter,
-  ChapterData,
-  Content,
-  ContentIdentifier,
-  ContentSource,
-} from "@suwatte/daisuke";
+import { Chapter, ChapterData, Content, ContentSource } from "@suwatte/daisuke";
 import {
   getBook,
   getBooksForSeriesAsChapters,
@@ -40,10 +34,5 @@ export const KomgaContentSource: Omit<ContentSource, OmittedKeys> = {
     return {
       pages: images,
     };
-  },
-  getIdentifierForURL: async function (
-    url: string
-  ): Promise<ContentIdentifier | null> {
-    return null;
   },
 };

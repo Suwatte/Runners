@@ -44,6 +44,7 @@ const config: SourceConfig = {
   disableTrackerLinking: true,
   disableUpdateChecks: true,
   allowsMultipleInstances: true,
+  requiresAuthenticationToAccessContent: true,
 };
 
 export const Target: Komga = {

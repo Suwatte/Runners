@@ -59,8 +59,6 @@ export const convertStatus = (key: string) => {
       return PublicationStatus.COMPLETED;
     case "RELEASING":
       return PublicationStatus.ONGOING;
-    case "NOT_YET_RELEASED":
-      return PublicationStatus.UNKNOWN;
     case "HIATUS":
       return PublicationStatus.HIATUS;
   }

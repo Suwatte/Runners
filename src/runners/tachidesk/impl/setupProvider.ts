@@ -1,4 +1,8 @@
-import { RunnerSetupProvider, UITextField } from "@suwatte/daisuke";
+import {
+  BooleanState,
+  RunnerSetupProvider,
+  UITextField,
+} from "@suwatte/daisuke";
 import { SuwayomiStore } from "../utils/store";
 
 export const SuwayomiSetupBuilder: RunnerSetupProvider = {
@@ -21,5 +25,10 @@ export const SuwayomiSetupBuilder: RunnerSetupProvider = {
 
   async validateSetupForm({ host }: { host: string }) {
     await ObjectStore.set("host", host);
+  },
+  isRunnerSetup: async function (): Promise<BooleanState> {
+    return {
+      state: !!(await SuwayomiStore.host()),
+    };
   },
 };

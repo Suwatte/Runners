@@ -98,7 +98,7 @@ export const getFullMedia = async (id: string): Promise<FullTrackItem> => {
 
 export const fullSearch = async (query: DirectoryRequest) => {
   const sort = query.sort
-    ? [getSortKey(query.sort.id, query.sort.ascending), "SCORE_DESC"]
+    ? [getSortKey(query.sort.id, query.sort.ascending ?? false), "SCORE_DESC"]
     : ["POPULARITY_DESC", "SCORE_DESC"];
 
   const variables = {

@@ -1,11 +1,4 @@
-import {
-  Chapter,
-  ChapterData,
-  ChapterPage,
-  Content,
-  ContentIdentifier,
-  ContentSource,
-} from "@suwatte/daisuke";
+import { Chapter, ChapterData, Content, ContentSource } from "@suwatte/daisuke";
 import { getChapterData, getChapters, getContent } from "../api";
 
 type OmittedKeys = "info" | "getDirectory" | "getDirectoryConfig";
@@ -25,10 +18,5 @@ export const SuwayomiContentSource: Omit<ContentSource, OmittedKeys> = {
     return {
       pages,
     };
-  },
-  getIdentifierForURL: async function (
-    url: string
-  ): Promise<ContentIdentifier | null> {
-    return null;
   },
 };

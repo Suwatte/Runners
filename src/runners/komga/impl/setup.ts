@@ -1,4 +1,9 @@
-import { Form, RunnerSetupProvider, UITextField } from "@suwatte/daisuke";
+import {
+  BooleanState,
+  Form,
+  RunnerSetupProvider,
+  UITextField,
+} from "@suwatte/daisuke";
 import { KomgaStore } from "../store";
 import { healthCheck } from "../api";
 
@@ -33,5 +38,10 @@ export const KomgaSetupProvider: RunnerSetupProvider = {
       console.error(`${error}`);
       throw new Error("Cannot Connect to Komga Server");
     }
+  },
+  isRunnerSetup: async function (): Promise<BooleanState> {
+    return {
+      state: !!(await KomgaStore.host()),
+    };
   },
 };

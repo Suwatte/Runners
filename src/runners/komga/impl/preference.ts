@@ -1,7 +1,7 @@
-import { Form, UIToggle, UserPreferenceHandler } from "@suwatte/daisuke";
+import { Form, RunnerPreferenceProvider, UIToggle } from "@suwatte/daisuke";
 import { KomgaStore } from "../store";
 
-export const KomgaPreferenceProvider: UserPreferenceHandler = {
+export const KomgaPreferenceProvider: RunnerPreferenceProvider = {
   getPreferenceMenu: async function (): Promise<Form> {
     return {
       sections: [
