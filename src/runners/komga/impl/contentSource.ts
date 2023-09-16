@@ -1,11 +1,18 @@
-import { Chapter, ChapterData, Content, ContentSource } from "@suwatte/daisuke";
 import {
-  getBook,
+  Chapter,
+  ChapterData,
+  ChapterPage,
+  Content,
+  ContentSource,
+} from "@suwatte/daisuke";
+import {
   getBooksForSeriesAsChapters,
   getHost,
   getSeries,
+  request,
 } from "../api";
 import { seriesToContent } from "../utils";
+import { PageDto } from "../types";
 
 type OmittedKeys = "info" | "getDirectory" | "getDirectoryConfig";
 export const KomgaContentSource: Omit<ContentSource, OmittedKeys> = {
@@ -18,21 +25,37 @@ export const KomgaContentSource: Omit<ContentSource, OmittedKeys> = {
     return getBooksForSeriesAsChapters(contentId);
   },
   getChapterData: async function (
-    contentId: string,
-    chapterId: string
+    _contentId: string,
+    bookId: string
   ): Promise<ChapterData> {
-    const book = await getBook(chapterId);
-    const pageCount = book.media.pagesCount;
     const host = await getHost();
 
-    const images = Array(pageCount)
-      .fill(0)
-      .map((_, idx) => ({
-        url: `${host}/api/v1/books/${chapterId}/pages/${idx + 1}`,
-      }));
+    const response = await request<PageDto[]>({
+      url: `${host}/api/v1/books/${bookId}/pages`,
+    });
+
+    const pages: ChapterPage[] = [];
+
+    const STTSupportedImageTypes = new Set([
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ]);
+    for (const page of response) {
+      if (STTSupportedImageTypes.has(page.mediaType.toLowerCase())) {
+        pages.push({
+          url: `${host}/api/v1/books/${bookId}/pages/${page.number}`,
+        });
+      } else {
+        pages.push({
+          url: `${host}/api/v1/books/${bookId}/pages/${page.number}?convert=png`,
+        });
+      }
+    }
 
     return {
-      pages: images,
+      pages,
     };
   },
 };

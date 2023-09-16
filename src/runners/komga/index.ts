@@ -14,6 +14,7 @@ import {
   KomgaMSB,
   KomgaPageProvider,
   KomgaPreferenceProvider,
+  KomgaProgressProvider,
   KomgaSetupProvider,
 } from "./impl";
 import { KomgaPageLinkResolver } from "./impl/pageLinkResolver";
@@ -25,7 +26,7 @@ type Komga = ContentSource;
 const info: RunnerInfo = {
   id: "org.komga",
   name: "Komga",
-  version: 1.0,
+  version: 1.1,
   minSupportedAppVersion: "6.0.0",
   thumbnail: "komga.png",
   website: "https://komga.org",
@@ -60,4 +61,5 @@ export const Target: Komga = {
   ...KomgaImageHandler,
   ...KomgaBookEvent,
   ...KomgaSetupProvider,
+  ...KomgaProgressProvider,
 };

@@ -35,7 +35,7 @@ async function getContextForBook(bookId: string): Promise<ReaderContext> {
     target: book.id,
     content,
     chapters,
-    requestedPageIndex: page - 1,
+    requestedPage: page,
     // Komga only supports 1 reading mode for all titles, do not set the reading mode
   };
 }

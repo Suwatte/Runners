@@ -7,3 +7,4 @@ export * from "./readerContextProvider";
 export * from "./imageHandler";
 export * from "./bookEvent";
 export * from "./setup";
+export * from "./progressSync";

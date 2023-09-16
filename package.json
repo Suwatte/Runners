@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "@suwatte/cli": "^2.0.1",
-    "@suwatte/daisuke": "^3.0.4",
+    "@suwatte/daisuke": "^3.0.5",
     "@suwatte/emulator": "^1.3.0",
     "he": "^1.2.0",
     "lodash": "^4.17.21"
