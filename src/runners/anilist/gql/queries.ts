@@ -66,7 +66,7 @@ query ($id: Int) {
 export const SimpleSearchQuery = `
 query SimpleSearch ($search: String, $isAdult: Boolean) {
       Page(perPage: 30) {
-        media(search: $search, type: MANGA, isAdult: $isAdult) {
+        media(search: $search, type: MANGA, isAdult: $isAdult, genre_not_in: ["Hentai"]) {
           id
           title {
             userPreferred

@@ -8,11 +8,12 @@ import { TrackerImplementation } from "./impl/tracker";
 import { OAuthImplementation } from "./impl/auth";
 import { LinkProvider, LinkResolver } from "./impl/pageLink";
 import { AdvancedTrackerImplementation } from "./impl/advancedTracker";
+import { AnilistPreferenceProvider } from "./impl/prefs";
 
 const info: RunnerInfo = {
   id: "co.anilist",
   name: "Anilist",
-  version: 1.1,
+  version: 1.3,
   website: "https://anilist.co",
   thumbnail: "anilist.png",
 };
@@ -31,4 +32,5 @@ export const Target: Anilist = {
   ...OAuthImplementation,
   ...LinkProvider,
   ...LinkResolver,
+  ...AnilistPreferenceProvider,
 };

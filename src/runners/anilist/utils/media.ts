@@ -25,6 +25,7 @@ import {
 } from "../types";
 import { mediaToFullTrackItem, mediaToHighlight } from "./parsers";
 import { convertSTTFilter, getSortKey } from "./utils";
+import { getNSFWSetting } from "./store";
 
 export const getSearchResults = async (titles: string[]) => {
   for (const title of titles) {
@@ -37,10 +38,12 @@ export const getSearchResults = async (titles: string[]) => {
 };
 
 export const simpleSearch = async (search: string): Promise<Highlight[]> => {
+  const nsfw = await getNSFWSetting();
   const {
     data: { Page },
   } = await request<SimpleSearchResponse>(SimpleSearchQuery, {
     search,
+    ...(!nsfw && { isAdult: false }),
   });
 
   const media = Page?.media;
@@ -101,15 +104,19 @@ export const fullSearch = async (query: DirectoryRequest) => {
     ? [getSortKey(query.sort.id, query.sort.ascending ?? false), "SCORE_DESC"]
     : ["POPULARITY_DESC", "SCORE_DESC"];
 
+  const allowNSFW = await getNSFWSetting();
+
   const variables = {
     page: query.page,
     search: query.query,
     sort,
     ...(query.filters && convertSTTFilter(query.filters)),
+    ...(!query.filters && { excludedGenres: ["Hentai"] }),
     ...(query.tag && {
       ...(query.tag.propertyId === "genres" && { genres: [query.tag.tagId] }),
       ...(query.tag.propertyId !== "genres" && { tags: [query.tag.tagId] }),
     }),
+    ...(!allowNSFW && { isAdult: false }),
   };
 
   const {
@@ -147,7 +154,9 @@ export const buildGenres = async () => {
     id: "genres",
     title: "Genres",
     type: FilterType.EXCLUDABLE_MULTISELECT,
-    options: genres.map((v) => ({ id: v, title: v })),
+    options: genres
+      .map((v) => ({ id: v, title: v }))
+      .filter((v) => v.id !== "Hentai"),
   };
 
   const tagFilters: DirectoryFilter[] = [];

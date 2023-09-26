@@ -35,7 +35,7 @@ export const convertSTTFilter = (filters: {
           object.genres = filters[key].included;
 
         if (excluded && excluded.length != 0)
-          object.excludedGenres = filters[key].excluded;
+          object.excludedGenres = [...filters[key].excluded, "Hentai"];
         break;
       }
 
