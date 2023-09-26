@@ -12,7 +12,7 @@ import { AdvancedTrackerImplementation } from "./impl/advancedTracker";
 const info: RunnerInfo = {
   id: "co.anilist",
   name: "Anilist",
-  version: 1.0,
+  version: 1.1,
   website: "https://anilist.co",
   thumbnail: "anilist.png",
 };

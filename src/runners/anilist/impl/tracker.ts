@@ -8,8 +8,10 @@ export const TrackerImplementation: Omit<ContentTracker, "info"> = {
   async didUpdateLastReadChapter(id, progress) {
     const variables = {
       mediaId: parseID(id),
-      progress: progress.chapter,
-      progressVolumes: progress.volume,
+      progress: progress.chapter ? Math.trunc(progress.chapter) : undefined,
+      progressVolumes: progress.volume
+        ? Math.trunc(progress.volume)
+        : undefined,
     };
     await request(MediaListEntryMutation, variables);
   },
