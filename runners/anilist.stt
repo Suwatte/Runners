@@ -530,8 +530,10 @@ exports.TrackerImplementation = {
     async didUpdateLastReadChapter(id, progress) {
         const variables = {
             mediaId: (0, utils_1.parseID)(id),
-            progress: progress.chapter,
-            progressVolumes: progress.volume,
+            progress: progress.chapter ? Math.trunc(progress.chapter) : undefined,
+            progressVolumes: progress.volume
+                ? Math.trunc(progress.volume)
+                : undefined,
         };
         await (0, utils_1.request)(gql_1.MediaListEntryMutation, variables);
     },
@@ -574,7 +576,7 @@ const advancedTracker_1 = require("./impl/advancedTracker");
 const info = {
     id: "co.anilist",
     name: "Anilist",
-    version: 1.0,
+    version: 1.1,
     website: "https://anilist.co",
     thumbnail: "anilist.png",
 };
