@@ -1,4 +1,3 @@
-"stt webkit";
 import {
   CatalogRating,
   ContentSource,
@@ -26,7 +25,7 @@ type Komga = ContentSource;
 const info: RunnerInfo = {
   id: "org.komga",
   name: "Komga",
-  version: 1.1,
+  version: 1.11,
   minSupportedAppVersion: "6.0.0",
   thumbnail: "komga.png",
   website: "https://komga.org",

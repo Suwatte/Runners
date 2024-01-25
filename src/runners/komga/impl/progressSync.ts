@@ -11,7 +11,7 @@ export const KomgaProgressProvider: ProgressSyncHandler = {
       url: await genURL(`/api/v1/series/${seriesId}/books`),
       params: {
         page: 0,
-        size: 2,
+        size: 999,
         sort: buildSort(SORTS.readProgress, false),
       },
     });
@@ -19,11 +19,18 @@ export const KomgaProgressProvider: ProgressSyncHandler = {
     if (!data || !data.length) return {};
 
     const [target] = data;
+    const readChapterIds = data
+      .filter((v) => v.readProgress?.completed === true)
+      .map((v) => v.id);
 
-    if (!target.readProgress) return {};
+    if (!target.readProgress)
+      return {
+        readChapterIds,
+      };
 
     // This method will only be used to sync progress from Komga to Suwatte
     return {
+      readChapterIds,
       currentReadingState: {
         chapterId: target.id,
         page: target.readProgress.page ?? 0,
