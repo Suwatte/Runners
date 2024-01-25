@@ -640,17 +640,23 @@ exports.KomgaProgressProvider = {
             url: await (0, utils_1.genURL)(`/api/v1/series/${seriesId}/books`),
             params: {
                 page: 0,
-                size: 2,
+                size: 999,
                 sort: (0, utils_1.buildSort)(utils_1.SORTS.readProgress, false),
             },
         });
         if (!data || !data.length)
             return {};
         const [target] = data;
+        const readChapterIds = data
+            .filter((v) => v.readProgress?.completed === true)
+            .map((v) => v.id);
         if (!target.readProgress)
-            return {};
+            return {
+                readChapterIds,
+            };
         // This method will only be used to sync progress from Komga to Suwatte
         return {
+            readChapterIds,
             currentReadingState: {
                 chapterId: target.id,
                 page: target.readProgress.page ?? 0,
@@ -741,7 +747,6 @@ exports.KomgaSetupProvider = {
 
 },{"../api":2,"../store":18,"@suwatte/daisuke":22}],17:[function(require,module,exports){
 "use strict";
-"stt webkit";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Target = void 0;
 const daisuke_1 = require("@suwatte/daisuke");
@@ -751,7 +756,7 @@ const pageLinkResolver_1 = require("./impl/pageLinkResolver");
 const info = {
     id: "org.komga",
     name: "Komga",
-    version: 1.1,
+    version: 1.11,
     minSupportedAppVersion: "6.0.0",
     thumbnail: "komga.png",
     website: "https://komga.org",
