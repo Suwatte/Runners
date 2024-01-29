@@ -133,8 +133,8 @@ export const buildEntryForm = async (id: string) => {
               id: v.name,
               title: v.name,
             })),
-            value: entry.customLists?
-              .filter((v) => v.enabled)
+            value: entry.customLists
+              ?.filter((v) => v.enabled)
               .map((v) => v.name),
           }),
           UIToggle({
