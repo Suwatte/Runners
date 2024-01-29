@@ -129,12 +129,12 @@ export const buildEntryForm = async (id: string) => {
           UIMultiPicker({
             id: "customLists",
             title: "Custom Lists",
-            options: entry.customLists.map((v) => ({
+            options: entry.customLists?.map((v) => ({
               id: v.name,
               title: v.name,
             })),
             value: entry.customLists
-              .filter((v) => v.enabled)
+              ?.filter((v) => v.enabled)
               .map((v) => v.name),
           }),
           UIToggle({
