@@ -729,12 +729,12 @@ const buildEntryForm = async (id) => {
                     (0, daisuke_1.UIMultiPicker)({
                         id: "customLists",
                         title: "Custom Lists",
-                        options: entry.customLists.map((v) => ({
+                        options: entry.customLists?.map((v) => ({
                             id: v.name,
                             title: v.name,
                         })),
                         value: entry.customLists
-                            .filter((v) => v.enabled)
+                            ?.filter((v) => v.enabled)
                             .map((v) => v.name),
                     }),
                     (0, daisuke_1.UIToggle)({
