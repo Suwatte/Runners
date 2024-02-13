@@ -100,7 +100,7 @@ const getSeriesForLibrary = async (library_id, sort, page, search) => {
             library_id,
             sort,
             page: page - 1,
-            size: 30,
+            size: utils_1.RESULT_COUNT,
             search,
         },
     };
@@ -111,11 +111,11 @@ exports.getSeriesForLibrary = getSeriesForLibrary;
 /**
  * Get books within a series
  */
-const getBooksForSeries = async (series, sort) => {
+const getBooksForSeries = async (series, sort, page) => {
     const { content: data, last } = await (0, _1.request)({
         url: await (0, utils_1.genURL)(`/api/v1/series/${series}/books`),
         params: {
-            page: 0,
+            page: page - 1,
             size: utils_1.RESULT_COUNT,
             sort,
         },
@@ -398,7 +398,7 @@ async function fetchDirectory(request) {
     const seriesId = request.context?.seriesId;
     const libraryId = request.context?.libraryId;
     if (seriesId) {
-        const result = await (0, api_1.getBooksForSeries)(seriesId, sort);
+        const result = await (0, api_1.getBooksForSeries)(seriesId, sort, request.page);
         return {
             results: result.items,
             isLastPage: result.isLastPage,
@@ -412,7 +412,7 @@ async function fetchDirectory(request) {
         const results = (await (0, api_1.getSeriesForLibrary)(libraryId, (0, utils_1.buildSort)(request.sort?.id, request.sort?.ascending), request.page, request.query)).map((v) => (0, utils_1.seriesToTile)(v, host, !(asTitle ?? false)));
         return {
             results,
-            isLastPage: results.length < 30,
+            isLastPage: results.length <= utils_1.RESULT_COUNT,
         };
     }
     throw new Error("unable to process request. Context provided is not defined.");
@@ -756,7 +756,7 @@ const pageLinkResolver_1 = require("./impl/pageLinkResolver");
 const info = {
     id: "org.komga",
     name: "Komga",
-    version: 1.11,
+    version: 1.12,
     minSupportedAppVersion: "6.0.0",
     thumbnail: "komga.png",
     website: "https://komga.org",
