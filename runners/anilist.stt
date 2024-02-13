@@ -604,7 +604,7 @@ const prefs_1 = require("./impl/prefs");
 const info = {
     id: "co.anilist",
     name: "Anilist",
-    version: 1.3,
+    version: 1.4,
     website: "https://anilist.co",
     thumbnail: "anilist.png",
 };
