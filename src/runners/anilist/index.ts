@@ -13,7 +13,7 @@ import { AnilistPreferenceProvider } from "./impl/prefs";
 const info: RunnerInfo = {
   id: "co.anilist",
   name: "Anilist",
-  version: 1.3,
+  version: 1.4,
   website: "https://anilist.co",
   thumbnail: "anilist.png",
 };
