@@ -83,7 +83,7 @@ export const getSeriesForLibrary = async (
       library_id,
       sort,
       page: page - 1,
-      size: 30,
+      size: RESULT_COUNT,
       search,
     },
   };
@@ -96,11 +96,11 @@ export const getSeriesForLibrary = async (
 /**
  * Get books within a series
  */
-export const getBooksForSeries = async (series: string, sort: string) => {
+export const getBooksForSeries = async (series: string, sort: string, page: number) => {
   const { content: data, last } = await request<PageBookDto>({
     url: await genURL(`/api/v1/series/${series}/books`),
     params: {
-      page: 0,
+      page: page - 1,
       size: RESULT_COUNT,
       sort,
     },

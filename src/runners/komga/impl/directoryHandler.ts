@@ -2,10 +2,9 @@ import {
   DirectoryConfig,
   DirectoryHandler,
   DirectoryRequest,
-  Highlight,
   PagedResult,
 } from "@suwatte/daisuke";
-import { DEFAULT_SORT, SortOptions, buildSort, seriesToTile } from "../utils";
+import { RESULT_COUNT, DEFAULT_SORT, SortOptions, buildSort, seriesToTile } from "../utils";
 import { getBooksForSeries, getHost, getSeriesForLibrary } from "../api";
 import { KomgaStore } from "../store";
 
@@ -49,7 +48,7 @@ async function fetchDirectory(request: DirectoryRequest): IResponse {
   const libraryId = request.context?.libraryId;
 
   if (seriesId) {
-    const result = await getBooksForSeries(seriesId, sort);
+    const result = await getBooksForSeries(seriesId, sort, request.page);
     return {
       results: result.items,
       isLastPage: result.isLastPage,
@@ -69,7 +68,7 @@ async function fetchDirectory(request: DirectoryRequest): IResponse {
 
     return {
       results,
-      isLastPage: results.length < 30,
+      isLastPage: results.length <= RESULT_COUNT,
     };
   }
 
