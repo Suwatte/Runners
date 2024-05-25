@@ -48,7 +48,7 @@ __exportStar(require("./library"), exports);
 },{"./auth":1,"./library":3,"./request":4}],3:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getBooks = exports.getSeries = exports.getBook = exports.getBooksForSeriesAsChapters = exports.getBooksForSeries = exports.getSeriesForLibrary = exports.getSeriesForLibraryWithState = exports.getBooksForLibrary = exports.getUserLibraries = void 0;
+exports.getBooks2 = exports.getBooks = exports.getSeries = exports.getBook = exports.getBooksForSeriesAsChapters = exports.getBooksForSeries = exports.getSeriesForLibrary = exports.getSeriesForLibraryWithState = exports.getBooksForLibrary = exports.getUserLibraries = void 0;
 const _1 = require(".");
 const auth_1 = require("./auth");
 const utils_1 = require("../utils");
@@ -100,7 +100,7 @@ const getSeriesForLibrary = async (library_id, sort, page, search) => {
             library_id,
             sort,
             page: page - 1,
-            size: utils_1.RESULT_COUNT,
+            size: 30,
             search,
         },
     };
@@ -166,6 +166,19 @@ const getBooks = async (series, size, sort = (0, utils_1.buildSort)(utils_1.DEFA
     return data ?? [];
 };
 exports.getBooks = getBooks;
+const getBooks2 = async (page, sort, search) => {
+    const { content: data } = await (0, _1.request)({
+        url: await (0, utils_1.genURL)(`/api/v1/books`),
+        params: {
+            page: page - 1,
+            size: utils_1.RESULT_COUNT,
+            sort,
+            search,
+        },
+    });
+    return data ?? [];
+};
+exports.getBooks2 = getBooks2;
 
 },{".":2,"../utils":21,"./auth":1}],4:[function(require,module,exports){
 "use strict";
@@ -372,7 +385,7 @@ exports.KomgaDirectoryHandler = {
         return fetchDirectory(request);
     },
     getDirectoryConfig: async function (key) {
-        return buildDirectoryConfig(key === "library");
+        return buildDirectoryConfig(true);
     },
 };
 /**
@@ -415,7 +428,25 @@ async function fetchDirectory(request) {
             isLastPage: results.length < utils_1.RESULT_COUNT,
         };
     }
-    throw new Error("unable to process request. Context provided is not defined.");
+    const isSeriesDirectory = request.context?.isSeriesDirectory ?? false;
+    const host = await (0, api_1.getHost)();
+    if (!host)
+        throw new Error("Host not defined");
+    if (isSeriesDirectory) {
+        const asTitle = await store_1.KomgaStore.openSeriesAsTitle();
+        const results = (await (0, api_1.getSeriesForLibrary)(libraryId, (0, utils_1.buildSort)(request.sort?.id, request.sort?.ascending), request.page, request.query)).map((v) => (0, utils_1.seriesToTile)(v, host, !(asTitle ?? false)));
+        return {
+            results,
+            isLastPage: results.length < utils_1.RESULT_COUNT,
+        };
+    }
+    else {
+        const results = (await (0, api_1.getBooks2)(request.page, (0, utils_1.buildSort)(request.sort?.id, request.sort?.ascending), request.query)).map((v) => (0, utils_1.bookToHighlight)(v, host));
+        return {
+            results,
+            isLastPage: results.length < utils_1.RESULT_COUNT,
+        };
+    }
 }
 
 },{"../api":2,"../store":18,"../utils":21}],9:[function(require,module,exports){
@@ -512,6 +543,7 @@ exports.KomgaPageProvider = {
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.KomgaPageLinkResolver = void 0;
+const daisuke_1 = require("@suwatte/daisuke");
 const library_1 = require("../api/library");
 const utils_1 = require("../utils");
 const api_1 = require("../api");
@@ -540,6 +572,11 @@ exports.KomgaPageLinkResolver = {
 // Library Sections
 function buildBrowseLibrarySections() {
     const sections = [];
+    sections.push({
+        id: "search_directory",
+        title: "Search Komga",
+        style: daisuke_1.SectionStyle.TAG,
+    });
     sections.push({
         id: "keep_reading",
         title: "Keep Reading",
@@ -573,6 +610,38 @@ async function resolveLibrarySection(libraryId, sectionKey) {
         return highlights;
     };
     switch (sectionKey) {
+        case "search_directory": {
+            const highlights = [
+                (0, daisuke_1.Generate)({
+                    title: "All Books",
+                    cover: "",
+                    id: "all_books",
+                    link: {
+                        request: {
+                            page: 1,
+                            context: {
+                                isSeriesDirectory: false,
+                            },
+                        },
+                    },
+                }),
+                (0, daisuke_1.Generate)({
+                    title: "All Series",
+                    cover: "",
+                    id: "all_series",
+                    link: {
+                        request: {
+                            page: 1,
+                            context: {
+                                isSeriesDirectory: true,
+                            },
+                        },
+                    },
+                }),
+            ];
+            items = highlights;
+            break;
+        }
         case "keep_reading": {
             const highlights = await (0, library_1.getBooksForLibrary)(libraryId, (0, utils_1.buildSort)(utils_1.SORTS.readProgress, false), "IN_PROGRESS");
             items = highlights;
@@ -600,7 +669,7 @@ async function resolveLibrarySection(libraryId, sectionKey) {
     return { items };
 }
 
-},{"../api":2,"../api/library":3,"../store":18,"../utils":21}],13:[function(require,module,exports){
+},{"../api":2,"../api/library":3,"../store":18,"../utils":21,"@suwatte/daisuke":22}],13:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.KomgaPreferenceProvider = void 0;
@@ -756,7 +825,7 @@ const pageLinkResolver_1 = require("./impl/pageLinkResolver");
 const info = {
     id: "org.komga",
     name: "Komga",
-    version: 1.13,
+    version: 1.14,
     minSupportedAppVersion: "6.0.0",
     thumbnail: "komga.png",
     website: "https://komga.org",
