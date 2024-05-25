@@ -10,8 +10,14 @@ import {
   SortOptions,
   buildSort,
   seriesToTile,
+  bookToHighlight,
 } from "../utils";
-import { getBooksForSeries, getHost, getSeriesForLibrary } from "../api";
+import {
+  getBooks2,
+  getBooksForSeries,
+  getHost,
+  getSeriesForLibrary,
+} from "../api";
 import { KomgaStore } from "../store";
 
 /**
@@ -24,7 +30,7 @@ export const KomgaDirectoryHandler: DirectoryHandler = {
   getDirectoryConfig: async function (
     key?: string | undefined
   ): Promise<DirectoryConfig> {
-    return buildDirectoryConfig(key === "library");
+    return buildDirectoryConfig(true);
   },
 };
 
@@ -78,7 +84,37 @@ async function fetchDirectory(request: DirectoryRequest): IResponse {
     };
   }
 
-  throw new Error(
-    "unable to process request. Context provided is not defined."
-  );
+  const isSeriesDirectory = request.context?.isSeriesDirectory ?? false;
+  const host = await getHost();
+  if (!host) throw new Error("Host not defined");
+
+  if (isSeriesDirectory) {
+    const asTitle = await KomgaStore.openSeriesAsTitle();
+    const results = (
+      await getSeriesForLibrary(
+        libraryId,
+        buildSort(request.sort?.id, request.sort?.ascending),
+        request.page,
+        request.query
+      )
+    ).map((v) => seriesToTile(v, host, !(asTitle ?? false)));
+
+    return {
+      results,
+      isLastPage: results.length < RESULT_COUNT,
+    };
+  } else {
+    const results = (
+      await getBooks2(
+        request.page,
+        buildSort(request.sort?.id, request.sort?.ascending),
+        request.query
+      )
+    ).map((v) => bookToHighlight(v, host));
+
+    return {
+      results,
+      isLastPage: results.length < RESULT_COUNT,
+    };
+  }
 }

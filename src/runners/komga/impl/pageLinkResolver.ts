@@ -1,9 +1,11 @@
 import {
+  Generate,
   Highlight,
   PageLink,
   PageLinkResolver,
   PageSection,
   ResolvedPageSection,
+  SectionStyle,
 } from "@suwatte/daisuke";
 import {
   getBooksForLibrary,
@@ -44,6 +46,12 @@ export const KomgaPageLinkResolver: PageLinkResolver = {
 // Library Sections
 function buildBrowseLibrarySections() {
   const sections: PageSection[] = [];
+
+  sections.push({
+    id: "search_directory",
+    title: "Search Komga",
+    style: SectionStyle.TAG,
+  });
 
   sections.push({
     id: "keep_reading",
@@ -90,6 +98,39 @@ async function resolveLibrarySection(
   };
 
   switch (sectionKey) {
+    case "search_directory": {
+      const highlights = [
+        Generate<Highlight>({
+          title: "All Books",
+          cover: "",
+          id: "all_books",
+          link: {
+            request: {
+              page: 1,
+              context: {
+                isSeriesDirectory: false,
+              },
+            },
+          },
+        }),
+
+        Generate<Highlight>({
+          title: "All Series",
+          cover: "",
+          id: "all_series",
+          link: {
+            request: {
+              page: 1,
+              context: {
+                isSeriesDirectory: true,
+              },
+            },
+          },
+        }),
+      ];
+      items = highlights;
+      break;
+    }
     case "keep_reading": {
       const highlights = await getBooksForLibrary(
         libraryId,

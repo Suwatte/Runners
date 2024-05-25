@@ -83,7 +83,7 @@ export const getSeriesForLibrary = async (
       library_id,
       sort,
       page: page - 1,
-      size: RESULT_COUNT,
+      size: 30,
       search,
     },
   };
@@ -96,7 +96,11 @@ export const getSeriesForLibrary = async (
 /**
  * Get books within a series
  */
-export const getBooksForSeries = async (series: string, sort: string, page: number) => {
+export const getBooksForSeries = async (
+  series: string,
+  sort: string,
+  page: number
+) => {
   const { content: data, last } = await request<PageBookDto>({
     url: await genURL(`/api/v1/series/${series}/books`),
     params: {
@@ -158,6 +162,24 @@ export const getBooks = async (
       page: 0,
       size,
       sort,
+    },
+  });
+
+  return data ?? [];
+};
+
+export const getBooks2 = async (
+  page: number,
+  sort: string,
+  search?: string
+) => {
+  const { content: data } = await request<PageBookDto>({
+    url: await genURL(`/api/v1/books`),
+    params: {
+      page: page - 1,
+      size: RESULT_COUNT,
+      sort,
+      search,
     },
   });
 
