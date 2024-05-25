@@ -4,7 +4,13 @@ import {
   DirectoryRequest,
   PagedResult,
 } from "@suwatte/daisuke";
-import { RESULT_COUNT, DEFAULT_SORT, SortOptions, buildSort, seriesToTile } from "../utils";
+import {
+  RESULT_COUNT,
+  DEFAULT_SORT,
+  SortOptions,
+  buildSort,
+  seriesToTile,
+} from "../utils";
 import { getBooksForSeries, getHost, getSeriesForLibrary } from "../api";
 import { KomgaStore } from "../store";
 
@@ -68,7 +74,7 @@ async function fetchDirectory(request: DirectoryRequest): IResponse {
 
     return {
       results,
-      isLastPage: results.length <= RESULT_COUNT,
+      isLastPage: results.length < RESULT_COUNT,
     };
   }
 
