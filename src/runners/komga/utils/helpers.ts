@@ -54,8 +54,8 @@ export const seriesToTile = (
 export const bookToHighlight = (book: BookDto, host: string): Highlight => {
   return {
     id: `book:${book.id}`,
-    title: book.metadata.title,
-    subtitle: `${book.media.pagesCount} Pages • ${book.size}`,
+    title: book.seriesTitle,
+    subtitle: `${book.metadata.title} • ${book.media.pagesCount} Pages • ${book.size}`,
     cover: `${host}/api/v1/books/${book.id}/thumbnail`,
     acquisitionLink: `${host}/api/v1/books/${book.id}/file`,
     streamable: true,
