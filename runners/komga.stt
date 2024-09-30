@@ -825,7 +825,7 @@ const pageLinkResolver_1 = require("./impl/pageLinkResolver");
 const info = {
     id: "org.komga",
     name: "Komga",
-    version: 1.14,
+    version: 1.15,
     minSupportedAppVersion: "6.0.0",
     thumbnail: "komga.png",
     website: "https://komga.org",
@@ -953,8 +953,8 @@ exports.seriesToTile = seriesToTile;
 const bookToHighlight = (book, host) => {
     return {
         id: `book:${book.id}`,
-        title: book.metadata.title,
-        subtitle: `${book.media.pagesCount} Pages • ${book.size}`,
+        title: book.seriesTitle,
+        subtitle: `${book.metadata.title} • ${book.media.pagesCount} Pages • ${book.size}`,
         cover: `${host}/api/v1/books/${book.id}/thumbnail`,
         acquisitionLink: `${host}/api/v1/books/${book.id}/file`,
         streamable: true,
