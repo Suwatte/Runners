@@ -37,6 +37,12 @@ export const seriesToTile = (
     title: series.metadata.title ?? series.name,
     subtitle,
     cover,
+    ...(series.booksUnreadCount > 0 && {
+      badge: {
+        color: "#0096FF",
+        count: series.booksUnreadCount,
+      },
+    }),
     ...(asRequest && {
       link: {
         request: {
