@@ -54,6 +54,24 @@ export const getBooksForLibrary = async (
 };
 
 /**
+ * Get Books on deck
+ */
+export const getBooksOnDeck = async (library_id: string | null) => {
+  const { content: data } = await request<PageBookDto>({
+    url: await genURL("/api/v1/books/ondeck"),
+    params: {
+      ...(library_id && { library_id }),
+    },
+  });
+  const host = await getHost();
+  const highlights: Highlight[] = (data ?? []).map((book) =>
+    bookToHighlight(book, host)
+  );
+
+  return highlights;
+};
+
+/**
  * Gets all series within a library
  */
 export const getSeriesForLibraryWithState = async (

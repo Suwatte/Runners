@@ -9,6 +9,7 @@ import {
 } from "@suwatte/daisuke";
 import {
   getBooksForLibrary,
+  getBooksOnDeck,
   getSeriesForLibraryWithState,
 } from "../api/library";
 import { SORTS, buildSort, seriesToTile } from "../utils";
@@ -59,8 +60,8 @@ function buildBrowseLibrarySections() {
   });
 
   sections.push({
-    id: "recently_released",
-    title: "Recently Released",
+    id: "on_deck",
+    title: "On Deck",
   });
   sections.push({
     id: "recently_added_books",
@@ -140,11 +141,8 @@ async function resolveLibrarySection(
       items = highlights;
       break;
     }
-    case "recently_released": {
-      const highlights = await getBooksForLibrary(
-        libraryId,
-        buildSort(SORTS.releaseDate, false)
-      );
+    case "on_deck": {
+      const highlights = await getBooksOnDeck(libraryId);
       items = highlights;
       break;
     }
