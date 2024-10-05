@@ -48,7 +48,7 @@ __exportStar(require("./library"), exports);
 },{"./auth":1,"./library":3,"./request":4}],3:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getBooks2 = exports.getBooks = exports.getSeries = exports.getBook = exports.getBooksForSeriesAsChapters = exports.getBooksForSeries = exports.getSeriesForLibrary = exports.getSeriesForLibraryWithState = exports.getBooksForLibrary = exports.getUserLibraries = void 0;
+exports.getBooks2 = exports.getBooks = exports.getSeries = exports.getBook = exports.getBooksForSeriesAsChapters = exports.getBooksForSeries = exports.getSeriesForLibrary = exports.getSeriesForLibraryWithState = exports.getBooksOnDeck = exports.getBooksForLibrary = exports.getUserLibraries = void 0;
 const _1 = require(".");
 const auth_1 = require("./auth");
 const utils_1 = require("../utils");
@@ -79,6 +79,21 @@ const getBooksForLibrary = async (library_id, sort, status) => {
     return highlights;
 };
 exports.getBooksForLibrary = getBooksForLibrary;
+/**
+ * Get Books on deck
+ */
+const getBooksOnDeck = async (library_id) => {
+    const { content: data } = await (0, _1.request)({
+        url: await (0, utils_1.genURL)("/api/v1/books/ondeck"),
+        params: {
+            ...(library_id && { library_id }),
+        },
+    });
+    const host = await (0, auth_1.getHost)();
+    const highlights = (data ?? []).map((book) => (0, utils_1.bookToHighlight)(book, host));
+    return highlights;
+};
+exports.getBooksOnDeck = getBooksOnDeck;
 /**
  * Gets all series within a library
  */
@@ -582,8 +597,8 @@ function buildBrowseLibrarySections() {
         title: "Keep Reading",
     });
     sections.push({
-        id: "recently_released",
-        title: "Recently Released",
+        id: "on_deck",
+        title: "On Deck",
     });
     sections.push({
         id: "recently_added_books",
@@ -647,8 +662,8 @@ async function resolveLibrarySection(libraryId, sectionKey) {
             items = highlights;
             break;
         }
-        case "recently_released": {
-            const highlights = await (0, library_1.getBooksForLibrary)(libraryId, (0, utils_1.buildSort)(utils_1.SORTS.releaseDate, false));
+        case "on_deck": {
+            const highlights = await (0, library_1.getBooksOnDeck)(libraryId);
             items = highlights;
             break;
         }
@@ -825,7 +840,7 @@ const pageLinkResolver_1 = require("./impl/pageLinkResolver");
 const info = {
     id: "org.komga",
     name: "Komga",
-    version: 1.15,
+    version: 1.16,
     minSupportedAppVersion: "6.0.0",
     thumbnail: "komga.png",
     website: "https://komga.org",
@@ -936,6 +951,12 @@ const seriesToTile = (series, host, asRequest) => {
         title: series.metadata.title ?? series.name,
         subtitle,
         cover,
+        ...(series.booksUnreadCount > 0 && {
+            badge: {
+                color: "#0096FF",
+                count: series.booksUnreadCount,
+            },
+        }),
         ...(asRequest && {
             link: {
                 request: {
