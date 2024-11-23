@@ -1,7 +1,7 @@
 import { NetworkRequest, NetworkResponse } from "@suwatte/daisuke";
 import { KomgaStore } from "../store";
 
-export async function request<T extends unknown>(req: NetworkRequest) {
+export async function request<T>(req: NetworkRequest) {
   const host = await KomgaStore.host();
   const credentials = await KomgaStore.credentials();
 

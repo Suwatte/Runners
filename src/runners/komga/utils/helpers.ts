@@ -7,12 +7,35 @@ import {
 } from "@suwatte/daisuke";
 import { getHost } from "../api";
 import { BookDto, SeriesDto } from "../types";
-import { DEFAULT_SORT } from "./constants";
+import { Sort } from "./constants";
+
+export const convertSort = (val: string | undefined): Sort | undefined => {
+  switch (val) {
+    case "metadata.titleSort":
+      return Sort.Name;
+    case "createdDate":
+      return Sort.DateAdded;
+    case "lastModifiedDate":
+      return Sort.DateUpdated;
+    case "booksMetadata.releaseDate":
+      return Sort.ReleaseDate;
+    case "name":
+      return Sort.FolderName;
+    case "booksCount":
+      return Sort.BooksCount;
+    case "readProgress.readDate":
+      return Sort.ReadDate;
+    case "metadata.numberSort":
+      return Sort.Number;
+    default:
+      return undefined;
+  }
+};
 
 /**
  * builds the sort query param using the key and its order
  */
-export const buildSort = (key: string = DEFAULT_SORT, asc: boolean = false) =>
+export const buildSort = (key: Sort, asc: boolean | undefined) =>
   `${key},${asc ? "asc" : "desc"}`;
 
 /**
