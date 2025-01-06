@@ -5,6 +5,7 @@ import {
   LibraryDto,
   PageBookDto,
   PageSeriesDto,
+  ReadListDto,
   SeriesDto,
 } from "../types";
 import { getHost } from "./auth";
@@ -157,6 +158,31 @@ export const getBooksForSeriesAsChapters = async (series: string) => {
   return items;
 };
 
+/**
+ * Gets all books from a user's readlist.
+ */
+export const getBooksForReadList = async (
+  readlist_id: string | null,
+  sort: string,
+  status?: "UNREAD" | "READ" | "IN_PROGRESS"
+) => {
+  const { content: data } = await request<PageBookDto>({
+    url: await genURL(`/api/v1/readlists`),
+    params: {
+      sort,
+      read_status: status,
+      ...(readlist_id && { readlist_id }),
+    },
+  });
+
+  const host = await getHost();
+  const highlights: Highlight[] = (data ?? []).map((book) =>
+    bookToHighlight(book, host)
+  );
+
+  return highlights;
+};
+
 export const getBook = async (id: string) => {
   return request<BookDto>({
     url: await genURL(`/api/v1/books/${id}`),
@@ -202,4 +228,10 @@ export const getBooks2 = async (
   });
 
   return data ?? [];
+};
+
+export const getReadList = async (id: string) => {
+  return request<ReadListDto>({
+    url: await genURL(`/api/v1/readlists/${id}`),
+  });
 };
