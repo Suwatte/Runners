@@ -16,6 +16,7 @@ import {
   getBooks2,
   getBooksForSeries,
   getHost,
+  getReadList,
   getSeriesForLibrary,
 } from "../api";
 import { KomgaStore } from "../store";
@@ -58,7 +59,8 @@ async function fetchDirectory(request: DirectoryRequest): IResponse {
     : buildSort();
   const seriesId = request.context?.seriesId;
   const libraryId = request.context?.libraryId;
-
+  const readlistId = request.context?.readlistId;
+  
   if (seriesId) {
     const result = await getBooksForSeries(seriesId, sort, request.page);
     return {
@@ -82,7 +84,21 @@ async function fetchDirectory(request: DirectoryRequest): IResponse {
       results,
       isLastPage: results.length < RESULT_COUNT,
     };
-  }
+  } else if (readlistId) {
+    // If a readlistId is provided, fetch books from the readlist
+    const host = await getHost();
+    if (!host) throw new Error("Host not defined");
+    
+    const results = await getBooksForReadList(
+      readlistId,
+      buildSort(request.sort?.id, request.sort?.ascending),
+      request.query
+    ).map((v) => bookToHighlight(v, host));
+
+    return {
+      results,
+      isLastPage: results.length < RESULT_COUNT,
+    };
 
   const isSeriesDirectory = request.context?.isSeriesDirectory ?? false;
   const host = await getHost();
