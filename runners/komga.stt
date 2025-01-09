@@ -1025,6 +1025,7 @@ const seriesToContent = async (series) => {
         status: convertStatus(series.metadata.status),
         info,
         summary: series.metadata.summary,
+        recommendedPanelMode: convertReadingMode(series.metadata.readingDirection),
     };
 };
 exports.seriesToContent = seriesToContent;
@@ -1042,6 +1043,26 @@ const convertStatus = (val) => {
         }
         case "hiatus": {
             return daisuke_1.PublicationStatus.HIATUS;
+        }
+    }
+};
+const convertReadingMode = (val) => {
+    val = val.toUpperCase();
+    switch (val) {
+        case "LEFT_TO_RIGHT": {
+            return daisuke_1.ReadingMode.PAGED_MANGA;
+        }
+        case "RIGHT_TO_LEFT": {
+            return daisuke_1.ReadingMode.PAGED_COMIC;
+        }
+        case "VERTICAL": {
+            return daisuke_1.ReadingMode.PAGED_VERTICAL;
+        }
+        case "WEBTOON": {
+            return daisuke_1.ReadingMode.WEBTOON;
+        }
+        default: {
+            return undefined;
         }
     }
 };
