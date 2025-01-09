@@ -4,6 +4,7 @@ import {
   DefinedLanguages,
   Highlight,
   PublicationStatus,
+  ReadingMode,
 } from "@suwatte/daisuke";
 import { getHost } from "../api";
 import { BookDto, SeriesDto } from "../types";
@@ -116,6 +117,7 @@ export const seriesToContent = async (series: SeriesDto): Promise<Content> => {
     status: convertStatus(series.metadata.status),
     info,
     summary: series.metadata.summary,
+    recommendedPanelMode: convertReadingMode(series.metadata.readingDirection),
   };
 };
 
@@ -134,6 +136,28 @@ const convertStatus = (val: string) => {
     }
     case "hiatus": {
       return PublicationStatus.HIATUS;
+    }
+  }
+};
+
+const convertReadingMode = (val: string) => {
+  val = val.toUpperCase();
+
+  switch (val) {
+    case "LEFT_TO_RIGHT": {
+      return ReadingMode.PAGED_MANGA;
+    }
+    case "RIGHT_TO_LEFT": {
+      return ReadingMode.PAGED_COMIC;
+    }
+    case "VERTICAL": {
+      return ReadingMode.PAGED_VERTICAL;
+    }
+    case "WEBTOON": {
+      return ReadingMode.WEBTOON;
+    }
+    default: {
+      return undefined;
     }
   }
 };
