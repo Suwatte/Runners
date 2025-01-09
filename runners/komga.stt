@@ -11,7 +11,7 @@ const getUser = async () => {
 };
 exports.getUser = getUser;
 const getHost = async () => {
-    let host = await store_1.KomgaStore.host();
+    const host = await store_1.KomgaStore.host();
     if (!host)
         throw new Error("You have not defined a server url!");
     if (host.endsWith("/"))
@@ -65,12 +65,12 @@ exports.getUserLibraries = getUserLibraries;
 /**
  * Gets All Books within a library
  */
-const getBooksForLibrary = async (library_id, sort, status) => {
+const getBooksForLibrary = async (library_id, sort, filters) => {
     const { content: data } = await (0, _1.request)({
         url: await (0, utils_1.genURL)("/api/v1/books"),
         params: {
             sort,
-            read_status: status,
+            ...filters,
             ...(library_id && { library_id }),
         },
     });
@@ -108,14 +108,15 @@ const getSeriesForLibraryWithState = async (library_id, state) => {
     return data ?? [];
 };
 exports.getSeriesForLibraryWithState = getSeriesForLibraryWithState;
-const getSeriesForLibrary = async (library_id, sort, page, search) => {
+const getSeriesForLibrary = async (library_id, sort, filters, page, search) => {
     const config = {
         url: await (0, utils_1.genURL)(`/api/v1/series`),
         params: {
-            library_id,
+            ...(library_id && { library_id }),
             sort,
+            ...filters,
             page: page - 1,
-            size: 30,
+            size: utils_1.RESULT_COUNT,
             search,
         },
     };
@@ -126,13 +127,14 @@ exports.getSeriesForLibrary = getSeriesForLibrary;
 /**
  * Get books within a series
  */
-const getBooksForSeries = async (series, sort, page) => {
+const getBooksForSeries = async (series, sort, filters, page) => {
     const { content: data, last } = await (0, _1.request)({
         url: await (0, utils_1.genURL)(`/api/v1/series/${series}/books`),
         params: {
             page: page - 1,
             size: utils_1.RESULT_COUNT,
             sort,
+            ...filters,
         },
     });
     const host = await (0, auth_1.getHost)();
@@ -149,7 +151,7 @@ const getBooksForSeriesAsChapters = async (series) => {
         params: {
             page: 0,
             size: 9999,
-            sort: (0, utils_1.buildSort)(utils_1.SORTS.number, false),
+            sort: (0, utils_1.buildSort)(utils_1.Sort.Number, false),
         },
     });
     const host = await (0, auth_1.getHost)();
@@ -169,7 +171,7 @@ const getSeries = async (id) => {
     });
 };
 exports.getSeries = getSeries;
-const getBooks = async (series, size, sort = (0, utils_1.buildSort)(utils_1.DEFAULT_SORT, false)) => {
+const getBooks = async (series, size, sort = (0, utils_1.buildSort)(utils_1.Sort.Number, false)) => {
     const { content: data } = await (0, _1.request)({
         url: await (0, utils_1.genURL)(`/api/v1/series/${series}/books`),
         params: {
@@ -181,13 +183,14 @@ const getBooks = async (series, size, sort = (0, utils_1.buildSort)(utils_1.DEFA
     return data ?? [];
 };
 exports.getBooks = getBooks;
-const getBooks2 = async (page, sort, search) => {
+const getBooks2 = async (page, sort, filters, search) => {
     const { content: data } = await (0, _1.request)({
         url: await (0, utils_1.genURL)(`/api/v1/books`),
         params: {
             page: page - 1,
             size: utils_1.RESULT_COUNT,
             sort,
+            ...filters,
             search,
         },
     });
@@ -281,17 +284,12 @@ exports.KomgaAuthentication = {
             },
         });
         // Try Fetching User to verify
-        try {
-            await client.request({
-                url: await (0, utils_1.genURL)("/api/v2/users/me"),
-            });
-            // Set Props
-            await ObjectStore.set("authenticated", true);
-            await SecureStore.set("credentials", value);
-        }
-        catch (err) {
-            throw err;
-        }
+        await client.request({
+            url: await (0, utils_1.genURL)("/api/v2/users/me"),
+        });
+        // Set Props
+        await ObjectStore.set("authenticated", true);
+        await SecureStore.set("credentials", value);
     },
 };
 
@@ -399,64 +397,60 @@ exports.KomgaDirectoryHandler = {
     getDirectory: function (request) {
         return fetchDirectory(request);
     },
-    getDirectoryConfig: async function (key) {
-        return buildDirectoryConfig(true);
+    getDirectoryConfig: async function (_) {
+        return buildDirectoryConfig();
     },
 };
 /**
  * Builds the Directory View Sort Options & Filters
  */
-function buildDirectoryConfig(searchable) {
+function buildDirectoryConfig() {
     return {
-        searchable,
+        searchable: true,
+        filters: utils_1.FilterOptions,
         sort: {
             options: utils_1.SortOptions,
             canChangeOrder: true,
-            default: {
-                id: utils_1.DEFAULT_SORT,
-                ascending: false,
-            },
         },
     };
 }
 async function fetchDirectory(request) {
-    const sort = request.sort
-        ? (0, utils_1.buildSort)(request.sort.id, request.sort.ascending)
-        : (0, utils_1.buildSort)();
+    const filters = request.filters ?? {};
     const seriesId = request.context?.seriesId;
     const libraryId = request.context?.libraryId;
+    const host = await (0, api_1.getHost)();
+    if (!host) {
+        throw new Error("Host not defined");
+    }
+    const asTitle = await store_1.KomgaStore.openSeriesAsTitle();
     if (seriesId) {
-        const result = await (0, api_1.getBooksForSeries)(seriesId, sort, request.page);
+        const sort = (0, utils_1.convertSort)(request.sort?.id) ?? utils_1.Sort.Number;
+        const result = await (0, api_1.getBooksForSeries)(seriesId, (0, utils_1.buildSort)(sort, request.sort?.ascending), filters, request.page);
         return {
             results: result.items,
             isLastPage: result.isLastPage,
         };
     }
     else if (libraryId) {
-        const host = await (0, api_1.getHost)();
-        const asTitle = await store_1.KomgaStore.openSeriesAsTitle();
-        if (!host)
-            throw new Error("Host not defined");
-        const results = (await (0, api_1.getSeriesForLibrary)(libraryId, (0, utils_1.buildSort)(request.sort?.id, request.sort?.ascending), request.page, request.query)).map((v) => (0, utils_1.seriesToTile)(v, host, !(asTitle ?? false)));
+        const sort = (0, utils_1.convertSort)(request.sort?.id) ?? utils_1.Sort.DateUpdated;
+        const results = (await (0, api_1.getSeriesForLibrary)(libraryId, (0, utils_1.buildSort)(sort, request.sort?.ascending), filters, request.page, request.query)).map((v) => (0, utils_1.seriesToTile)(v, host, !(asTitle ?? false)));
         return {
             results,
             isLastPage: results.length < utils_1.RESULT_COUNT,
         };
     }
     const isSeriesDirectory = request.context?.isSeriesDirectory ?? false;
-    const host = await (0, api_1.getHost)();
-    if (!host)
-        throw new Error("Host not defined");
     if (isSeriesDirectory) {
-        const asTitle = await store_1.KomgaStore.openSeriesAsTitle();
-        const results = (await (0, api_1.getSeriesForLibrary)(libraryId, (0, utils_1.buildSort)(request.sort?.id, request.sort?.ascending), request.page, request.query)).map((v) => (0, utils_1.seriesToTile)(v, host, !(asTitle ?? false)));
+        const sort = (0, utils_1.convertSort)(request.sort?.id) ?? utils_1.Sort.DateUpdated;
+        const results = (await (0, api_1.getSeriesForLibrary)(libraryId, (0, utils_1.buildSort)(sort, request.sort?.ascending), filters, request.page, request.query)).map((v) => (0, utils_1.seriesToTile)(v, host, !(asTitle ?? false)));
         return {
             results,
             isLastPage: results.length < utils_1.RESULT_COUNT,
         };
     }
     else {
-        const results = (await (0, api_1.getBooks2)(request.page, (0, utils_1.buildSort)(request.sort?.id, request.sort?.ascending), request.query)).map((v) => (0, utils_1.bookToHighlight)(v, host));
+        const sort = (0, utils_1.convertSort)(request.sort?.id) ?? utils_1.Sort.DateAdded;
+        const results = (await (0, api_1.getBooks2)(request.page, (0, utils_1.buildSort)(sort, request.sort?.ascending), filters, request.query)).map((v) => (0, utils_1.bookToHighlight)(v, host));
         return {
             results,
             isLastPage: results.length < utils_1.RESULT_COUNT,
@@ -636,6 +630,7 @@ async function resolveLibrarySection(libraryId, sectionKey) {
                             page: 1,
                             context: {
                                 isSeriesDirectory: false,
+                                libraryId,
                             },
                         },
                     },
@@ -649,6 +644,7 @@ async function resolveLibrarySection(libraryId, sectionKey) {
                             page: 1,
                             context: {
                                 isSeriesDirectory: true,
+                                libraryId,
                             },
                         },
                     },
@@ -658,7 +654,7 @@ async function resolveLibrarySection(libraryId, sectionKey) {
             break;
         }
         case "keep_reading": {
-            const highlights = await (0, library_1.getBooksForLibrary)(libraryId, (0, utils_1.buildSort)(utils_1.SORTS.readProgress, false), "IN_PROGRESS");
+            const highlights = await (0, library_1.getBooksForLibrary)(libraryId, (0, utils_1.buildSort)(utils_1.Sort.ReadDate, false), { read_status: [utils_1.ReadStatus.InProgress] });
             items = highlights;
             break;
         }
@@ -668,7 +664,7 @@ async function resolveLibrarySection(libraryId, sectionKey) {
             break;
         }
         case "recently_added_books": {
-            const highlights = await (0, library_1.getBooksForLibrary)(libraryId, (0, utils_1.buildSort)(utils_1.SORTS.creationDate, false));
+            const highlights = await (0, library_1.getBooksForLibrary)(libraryId, (0, utils_1.buildSort)(utils_1.Sort.DateAdded, false), {});
             items = highlights;
             break;
         }
@@ -725,7 +721,7 @@ exports.KomgaProgressProvider = {
             params: {
                 page: 0,
                 size: 999,
-                sort: (0, utils_1.buildSort)(utils_1.SORTS.readProgress, false),
+                sort: (0, utils_1.buildSort)(utils_1.Sort.ReadDate, false),
             },
         });
         if (!data || !data.length)
@@ -890,50 +886,143 @@ exports.KomgaStore = {
 },{}],19:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DEFAULT_SORT = exports.RESULT_COUNT = exports.SortOptions = exports.SORTS = void 0;
-exports.SORTS = {
-    readProgress: "readProgress.readDate",
-    releaseDate: "metadata.releaseDate",
-    creationDate: "createdDate",
-    number: "metadata.numberSort",
-    name: "name",
-};
+exports.FilterOptions = exports.ReadStatus = exports.SeriesStatus = exports.RESULT_COUNT = exports.SortOptions = exports.Sort = exports.DirectoryType = void 0;
+const daisuke_1 = require("@suwatte/daisuke");
+var DirectoryType;
+(function (DirectoryType) {
+    DirectoryType["Series"] = "SERIES";
+    DirectoryType["Library"] = "LIBRARY";
+})(DirectoryType || (exports.DirectoryType = DirectoryType = {}));
+var Sort;
+(function (Sort) {
+    Sort["Name"] = "metadata.titleSort";
+    Sort["DateAdded"] = "createdDate";
+    Sort["DateUpdated"] = "lastModifiedDate";
+    Sort["ReleaseDate"] = "booksMetadata.releaseDate";
+    Sort["FolderName"] = "name";
+    Sort["BooksCount"] = "booksCount";
+    Sort["ReadDate"] = "readProgress.readDate";
+    Sort["Number"] = "metadata.numberSort";
+})(Sort || (exports.Sort = Sort = {}));
 exports.SortOptions = [
     {
-        id: "metadata.numberSort",
-        title: "Issue Number",
-    },
-    {
-        id: "name",
+        id: Sort.Name,
         title: "Name",
     },
     {
-        id: "readProgress.readDate",
-        title: "Reading Progress",
+        id: Sort.DateAdded,
+        title: "Date Added",
     },
     {
-        id: "metadata.releaseDate",
+        id: Sort.DateUpdated,
+        title: "Date Updated",
+    },
+    {
+        id: Sort.ReleaseDate,
         title: "Release Date",
     },
     {
-        id: "createdDate",
-        title: "Creation Date",
+        id: Sort.FolderName,
+        title: "Folder Name",
+    },
+    {
+        id: Sort.BooksCount,
+        title: "Books Count",
     },
 ];
 exports.RESULT_COUNT = 30;
-exports.DEFAULT_SORT = "metadata.numberSort";
+var SeriesStatus;
+(function (SeriesStatus) {
+    SeriesStatus["Ended"] = "ENDED";
+    SeriesStatus["Ongoing"] = "ONGOING";
+    SeriesStatus["Abandoned"] = "ABANDONED";
+    SeriesStatus["Hiatus"] = "HIATUS";
+})(SeriesStatus || (exports.SeriesStatus = SeriesStatus = {}));
+var ReadStatus;
+(function (ReadStatus) {
+    ReadStatus["Unread"] = "UNREAD";
+    ReadStatus["InProgress"] = "IN_PROGRESS";
+    ReadStatus["Read"] = "READ";
+})(ReadStatus || (exports.ReadStatus = ReadStatus = {}));
+exports.FilterOptions = [
+    {
+        id: "read_status",
+        title: "Read Status",
+        type: daisuke_1.FilterType.MULTISELECT,
+        options: [
+            {
+                id: ReadStatus.Unread,
+                title: "Unread",
+            },
+            {
+                id: ReadStatus.InProgress,
+                title: "In Progress",
+            },
+            {
+                id: ReadStatus.Read,
+                title: "Read",
+            },
+        ],
+    },
+    {
+        id: "status",
+        title: "Series Status",
+        type: daisuke_1.FilterType.MULTISELECT,
+        options: [
+            {
+                id: SeriesStatus.Ended,
+                title: "Ended",
+            },
+            {
+                id: SeriesStatus.Ongoing,
+                title: "Ongoing",
+            },
+            {
+                id: SeriesStatus.Abandoned,
+                title: "Abandoned",
+            },
+            {
+                id: SeriesStatus.Hiatus,
+                title: "Hiatus",
+            },
+        ],
+    },
+];
 
-},{}],20:[function(require,module,exports){
+},{"@suwatte/daisuke":22}],20:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.seriesToContent = exports.bookToChapter = exports.bookToHighlight = exports.seriesToTile = exports.genURL = exports.buildSort = void 0;
+exports.seriesToContent = exports.bookToChapter = exports.bookToHighlight = exports.seriesToTile = exports.genURL = exports.buildSort = exports.convertSort = void 0;
 const daisuke_1 = require("@suwatte/daisuke");
 const api_1 = require("../api");
 const constants_1 = require("./constants");
+const convertSort = (val) => {
+    switch (val) {
+        case "metadata.titleSort":
+            return constants_1.Sort.Name;
+        case "createdDate":
+            return constants_1.Sort.DateAdded;
+        case "lastModifiedDate":
+            return constants_1.Sort.DateUpdated;
+        case "booksMetadata.releaseDate":
+            return constants_1.Sort.ReleaseDate;
+        case "name":
+            return constants_1.Sort.FolderName;
+        case "booksCount":
+            return constants_1.Sort.BooksCount;
+        case "readProgress.readDate":
+            return constants_1.Sort.ReadDate;
+        case "metadata.numberSort":
+            return constants_1.Sort.Number;
+        default:
+            return undefined;
+    }
+};
+exports.convertSort = convertSort;
 /**
  * builds the sort query param using the key and its order
  */
-const buildSort = (key = constants_1.DEFAULT_SORT, asc = false) => `${key},${asc ? "asc" : "desc"}`;
+const buildSort = (key, asc) => `${key},${asc ? "asc" : "desc"}`;
 exports.buildSort = buildSort;
 /**
  * Generates a url using the user specified host
