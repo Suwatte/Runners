@@ -8,7 +8,7 @@ export const getUser = async () => {
 };
 
 export const getHost = async () => {
-  let host = await KomgaStore.host();
+  const host = await KomgaStore.host();
   if (!host) throw new Error("You have not defined a server url!");
   if (host.endsWith("/")) return host.slice(0, -1);
   return host;

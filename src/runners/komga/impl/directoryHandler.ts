@@ -6,11 +6,14 @@ import {
 } from "@suwatte/daisuke";
 import {
   RESULT_COUNT,
-  DEFAULT_SORT,
+  FilterItems,
+  FilterOptions,
   SortOptions,
   buildSort,
   seriesToTile,
   bookToHighlight,
+  Sort,
+  convertSort,
 } from "../utils";
 import {
   getBooks2,
@@ -28,56 +31,61 @@ export const KomgaDirectoryHandler: DirectoryHandler = {
     return fetchDirectory(request);
   },
   getDirectoryConfig: async function (
-    key?: string | undefined
+    _: string | undefined
   ): Promise<DirectoryConfig> {
-    return buildDirectoryConfig(true);
+    return buildDirectoryConfig();
   },
 };
 
 /**
  * Builds the Directory View Sort Options & Filters
  */
-function buildDirectoryConfig(searchable: boolean): DirectoryConfig {
+function buildDirectoryConfig(): DirectoryConfig {
   return {
-    searchable,
+    searchable: true,
+    filters: FilterOptions,
     sort: {
       options: SortOptions,
       canChangeOrder: true,
-      default: {
-        id: DEFAULT_SORT,
-        ascending: false,
-      },
     },
   };
 }
 
 type IResponse = Promise<PagedResult>;
 async function fetchDirectory(request: DirectoryRequest): IResponse {
-  const sort = request.sort
-    ? buildSort(request.sort.id, request.sort.ascending)
-    : buildSort();
+  const filters: FilterItems = request.filters ?? {};
   const seriesId = request.context?.seriesId;
   const libraryId = request.context?.libraryId;
 
+  const host = await getHost();
+  if (!host) {
+    throw new Error("Host not defined");
+  }
+  const asTitle = await KomgaStore.openSeriesAsTitle();
+
   if (seriesId) {
-    const result = await getBooksForSeries(seriesId, sort, request.page);
+    const sort = convertSort(request.sort?.id) ?? Sort.Number;
+    const result = await getBooksForSeries(
+      seriesId,
+      buildSort(sort, request.sort?.ascending),
+      filters,
+      request.page
+    );
     return {
       results: result.items,
       isLastPage: result.isLastPage,
     };
   } else if (libraryId) {
-    const host = await getHost();
-    const asTitle = await KomgaStore.openSeriesAsTitle();
-    if (!host) throw new Error("Host not defined");
+    const sort = convertSort(request.sort?.id) ?? Sort.DateUpdated;
     const results = (
       await getSeriesForLibrary(
         libraryId,
-        buildSort(request.sort?.id, request.sort?.ascending),
+        buildSort(sort, request.sort?.ascending),
+        filters,
         request.page,
         request.query
       )
     ).map((v) => seriesToTile(v, host, !(asTitle ?? false)));
-
     return {
       results,
       isLastPage: results.length < RESULT_COUNT,
@@ -85,33 +93,31 @@ async function fetchDirectory(request: DirectoryRequest): IResponse {
   }
 
   const isSeriesDirectory = request.context?.isSeriesDirectory ?? false;
-  const host = await getHost();
-  if (!host) throw new Error("Host not defined");
-
   if (isSeriesDirectory) {
-    const asTitle = await KomgaStore.openSeriesAsTitle();
+    const sort = convertSort(request.sort?.id) ?? Sort.DateUpdated;
     const results = (
       await getSeriesForLibrary(
         libraryId,
-        buildSort(request.sort?.id, request.sort?.ascending),
+        buildSort(sort, request.sort?.ascending),
+        filters,
         request.page,
         request.query
       )
     ).map((v) => seriesToTile(v, host, !(asTitle ?? false)));
-
     return {
       results,
       isLastPage: results.length < RESULT_COUNT,
     };
   } else {
+    const sort = convertSort(request.sort?.id) ?? Sort.DateAdded;
     const results = (
       await getBooks2(
         request.page,
-        buildSort(request.sort?.id, request.sort?.ascending),
+        buildSort(sort, request.sort?.ascending),
+        filters,
         request.query
       )
     ).map((v) => bookToHighlight(v, host));
-
     return {
       results,
       isLastPage: results.length < RESULT_COUNT,

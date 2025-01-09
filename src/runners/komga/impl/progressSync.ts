@@ -1,6 +1,6 @@
 import { ContentProgressState, ProgressSyncHandler } from "@suwatte/daisuke";
 import { request } from "../api";
-import { SORTS, buildSort, genURL } from "../utils";
+import { Sort, buildSort, genURL } from "../utils";
 import { PageBookDto } from "../types";
 
 export const KomgaProgressProvider: ProgressSyncHandler = {
@@ -12,7 +12,7 @@ export const KomgaProgressProvider: ProgressSyncHandler = {
       params: {
         page: 0,
         size: 999,
-        sort: buildSort(SORTS.readProgress, false),
+        sort: buildSort(Sort.ReadDate, false),
       },
     });
 

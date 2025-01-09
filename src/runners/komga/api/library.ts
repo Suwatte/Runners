@@ -9,13 +9,13 @@ import {
 } from "../types";
 import { getHost } from "./auth";
 import {
-  DEFAULT_SORT,
   RESULT_COUNT,
-  SORTS,
   bookToChapter,
   bookToHighlight,
+  Sort,
   buildSort,
   genURL,
+  FilterItems,
 } from "../utils";
 
 /**
@@ -35,13 +35,13 @@ export const getUserLibraries = async () => {
 export const getBooksForLibrary = async (
   library_id: string | null,
   sort: string,
-  status?: "UNREAD" | "READ" | "IN_PROGRESS"
+  filters: FilterItems
 ) => {
   const { content: data } = await request<PageBookDto>({
     url: await genURL("/api/v1/books"),
     params: {
       sort,
-      read_status: status,
+      ...filters,
       ...(library_id && { library_id }),
     },
   });
@@ -90,18 +90,20 @@ export const getSeriesForLibraryWithState = async (
 };
 
 export const getSeriesForLibrary = async (
-  library_id: string,
+  library_id: string | null,
   sort: string,
+  filters: FilterItems,
   page: number,
   search?: string
 ) => {
   const config = {
     url: await genURL(`/api/v1/series`),
     params: {
-      library_id,
+      ...(library_id && { library_id }),
       sort,
+      ...filters,
       page: page - 1,
-      size: 30,
+      size: RESULT_COUNT,
       search,
     },
   };
@@ -117,6 +119,7 @@ export const getSeriesForLibrary = async (
 export const getBooksForSeries = async (
   series: string,
   sort: string,
+  filters: FilterItems,
   page: number
 ) => {
   const { content: data, last } = await request<PageBookDto>({
@@ -125,6 +128,7 @@ export const getBooksForSeries = async (
       page: page - 1,
       size: RESULT_COUNT,
       sort,
+      ...filters,
     },
   });
   const host = await getHost();
@@ -145,7 +149,7 @@ export const getBooksForSeriesAsChapters = async (series: string) => {
     params: {
       page: 0,
       size: 9999,
-      sort: buildSort(SORTS.number, false),
+      sort: buildSort(Sort.Number, false),
     },
   });
   const host = await getHost();
@@ -172,7 +176,7 @@ export const getSeries = async (id: string) => {
 export const getBooks = async (
   series: string,
   size: number,
-  sort: string = buildSort(DEFAULT_SORT, false)
+  sort: string = buildSort(Sort.Number, false)
 ) => {
   const { content: data } = await request<PageBookDto>({
     url: await genURL(`/api/v1/series/${series}/books`),
@@ -189,6 +193,7 @@ export const getBooks = async (
 export const getBooks2 = async (
   page: number,
   sort: string,
+  filters: FilterItems,
   search?: string
 ) => {
   const { content: data } = await request<PageBookDto>({
@@ -197,6 +202,7 @@ export const getBooks2 = async (
       page: page - 1,
       size: RESULT_COUNT,
       sort,
+      ...filters,
       search,
     },
   });

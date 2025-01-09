@@ -46,16 +46,12 @@ export const KomgaAuthentication: BasicAuthenticatable = {
     });
 
     // Try Fetching User to verify
-    try {
-      await client.request({
-        url: await genURL("/api/v2/users/me"),
-      });
+    await client.request({
+      url: await genURL("/api/v2/users/me"),
+    });
 
-      // Set Props
-      await ObjectStore.set("authenticated", true);
-      await SecureStore.set("credentials", value);
-    } catch (err) {
-      throw err;
-    }
+    // Set Props
+    await ObjectStore.set("authenticated", true);
+    await SecureStore.set("credentials", value);
   },
 };

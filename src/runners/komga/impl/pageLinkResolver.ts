@@ -12,7 +12,7 @@ import {
   getBooksOnDeck,
   getSeriesForLibraryWithState,
 } from "../api/library";
-import { SORTS, buildSort, seriesToTile } from "../utils";
+import { ReadStatus, Sort, buildSort, seriesToTile } from "../utils";
 import { getHost } from "../api";
 import { KomgaStore } from "../store";
 
@@ -110,6 +110,7 @@ async function resolveLibrarySection(
               page: 1,
               context: {
                 isSeriesDirectory: false,
+                libraryId,
               },
             },
           },
@@ -124,6 +125,7 @@ async function resolveLibrarySection(
               page: 1,
               context: {
                 isSeriesDirectory: true,
+                libraryId,
               },
             },
           },
@@ -135,8 +137,8 @@ async function resolveLibrarySection(
     case "keep_reading": {
       const highlights = await getBooksForLibrary(
         libraryId,
-        buildSort(SORTS.readProgress, false),
-        "IN_PROGRESS"
+        buildSort(Sort.ReadDate, false),
+        { read_status: [ReadStatus.InProgress] }
       );
       items = highlights;
       break;
@@ -149,7 +151,8 @@ async function resolveLibrarySection(
     case "recently_added_books": {
       const highlights = await getBooksForLibrary(
         libraryId,
-        buildSort(SORTS.creationDate, false)
+        buildSort(Sort.DateAdded, false),
+        {}
       );
       items = highlights;
       break;
